@@ -3,10 +3,13 @@ server:
 
 app:
     internal-jwt:
-        secret: replace-this-with-a-long-secure-internal-hmac-secret-key-1234567890
         issuer: bff-service
         audience: internal-api
         ttl-seconds: 300
+        private-key-store-location: classpath:keys/bff-jwt-keystore.p12
+        private-key-store-password: changeit
+        private-key-alias: bff-jwt-key
+        private-key-password: changeit
     downstream:
         users: http://localhost:8081
         orders: http://localhost:8082

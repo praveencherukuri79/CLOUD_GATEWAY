@@ -1,0 +1,14 @@
+server:
+    port: 8081
+
+app:
+    security:
+        jwt:
+            public-cert-location: classpath:keys/bff-jwt-public-cert.pem
+            issuer: bff-service
+            audience: internal-api
+
+logging:
+    level:
+        com.example.userservice: INFO
+        org.springframework.security: INFO
