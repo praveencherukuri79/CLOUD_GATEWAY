@@ -1,0 +1,5 @@
+Start-Process powershell -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', '.\scripts\users-mock-server.ps1'
+Start-Process powershell -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', '.\scripts\orders-mock-server.ps1'
+Start-Process powershell -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', '.\scripts\notifications-mock-server.ps1'
+Start-Process powershell -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', '.\scripts\alerts-mock-server.ps1'
+Write-Host 'Started mock servers on ports 8081, 8082, 8083 and 8084.'

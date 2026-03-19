@@ -1,0 +1,21 @@
+server:
+    port: 8080
+
+app:
+    internal-jwt:
+        secret: replace-this-with-a-long-secure-internal-hmac-secret-key-1234567890
+        issuer: bff-service
+        audience: internal-api
+        ttl-seconds: 300
+    downstream:
+        users: http://localhost:8081
+        orders: http://localhost:8082
+        notifications: http://localhost:8083
+        alerts: http://localhost:8084
+
+logging:
+    level:
+        com.example.bff: WARN
+        org.springframework.security: INFO
+        org.springframework.web: INFO
+        org.springframework.cloud.gateway.server.mvc: INFO

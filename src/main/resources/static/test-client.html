@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>BFF Gateway Test Client</title>
+        <style>
+            :root {
+                color-scheme: light dark;
+                font-family: Arial, sans-serif;
+            }
+
+            body {
+                margin: 0;
+                padding: 24px;
+                background: #0f172a;
+                color: #e2e8f0;
+            }
+
+            .container {
+                max-width: 1000px;
+                margin: 0 auto;
+            }
+
+            .card {
+                background: #111827;
+                border: 1px solid #334155;
+                border-radius: 12px;
+                padding: 20px;
+                margin-bottom: 20px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            }
+
+            h1,
+            h2 {
+                margin-top: 0;
+            }
+
+            button,
+            a.button {
+                display: inline-block;
+                margin: 8px 8px 8px 0;
+                padding: 10px 14px;
+                border-radius: 8px;
+                border: none;
+                background: #2563eb;
+                color: white;
+                text-decoration: none;
+                cursor: pointer;
+                font-size: 14px;
+            }
+
+            button.secondary,
+            a.button.secondary {
+                background: #475569;
+            }
+
+            pre {
+                background: #020617;
+                border: 1px solid #334155;
+                border-radius: 8px;
+                padding: 14px;
+                overflow-x: auto;
+                white-space: pre-wrap;
+            }
+
+            code {
+                font-family: Consolas, monospace;
+            }
+
+            .output {
+                min-height: 100px;
+            }
+
+            .hint {
+                color: #94a3b8;
+            }
+
+            .command-row {
+                display: flex;
+                gap: 12px;
+                align-items: flex-start;
+                flex-wrap: wrap;
+                margin-bottom: 16px;
+            }
+
+            .command-row pre {
+                flex: 1 1 700px;
+                margin: 0;
+            }
+
+            .command-actions {
+                flex: 0 0 auto;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="card">
+                <h1>Spring BFF Gateway Test Client</h1>
+                <p>
+                    Use this page to test the local MVC endpoint and the proxied gateway endpoints
+                    after logging in.
+                </p>
+                <a class="button" href="/login">Open Login Page</a>
+                <a class="button secondary" href="/api/local/hello" target="_blank" rel="noreferrer"
+                    >Open Local Endpoint</a
+                >
+                <p class="hint">
+                    Demo login: <strong>demoUser123</strong> / <strong>password</strong>
+                </p>
+            </div>
+
+            <div class="card">
+                <h2>Browser Tests</h2>
+                <button onclick="runLogin()">Login from this page</button>
+                <button onclick="callApi('/api/local/hello')">Call /api/local/hello</button>
+                <button onclick="callApi('/proxy/users/123')">Call /proxy/users/123</button>
+                <button onclick="callApi('/proxy/orders/456')">Call /proxy/orders/456</button>
+                <button onclick="callApi('/custom-proxy/notifications/101')">
+                    Call /custom-proxy/notifications/101
+                </button>
+                <button onclick="callApi('/custom-proxy/alerts/202')">
+                    Call /custom-proxy/alerts/202
+                </button>
+                <pre id="output" class="output">Click a button after logging in.</pre>
+            </div>
+
+            <div class="card">
+                <h2>Clickable cURL Tests</h2>
+                <p>
+                    Each command has a <strong>Run</strong> button that performs the equivalent
+                    request in the browser, plus a <strong>Copy</strong> button.
+                </p>
+
+                <div class="command-row">
+                    <pre><code id="cmd-login">curl -i -c cookies.txt -X POST http://localhost:8080/login \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=demoUser123&password=password"</code></pre>
+                    <div class="command-actions">
+                        <button onclick="runLogin()">Run</button>
+                        <button class="secondary" onclick="copyCommand('cmd-login')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="command-row">
+                    <pre><code id="cmd-local">curl -b cookies.txt -c cookies.txt http://localhost:8080/api/local/hello</code></pre>
+                    <div class="command-actions">
+                        <button onclick="callApi('/api/local/hello')">Run</button>
+                        <button class="secondary" onclick="copyCommand('cmd-local')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="command-row">
+                    <pre><code id="cmd-users">curl -b cookies.txt -c cookies.txt http://localhost:8080/proxy/users/123</code></pre>
+                    <div class="command-actions">
+                        <button onclick="callApi('/proxy/users/123')">Run</button>
+                        <button class="secondary" onclick="copyCommand('cmd-users')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="command-row">
+                    <pre><code id="cmd-orders">curl -b cookies.txt -c cookies.txt http://localhost:8080/proxy/orders/456</code></pre>
+                    <div class="command-actions">
+                        <button onclick="callApi('/proxy/orders/456')">Run</button>
+                        <button class="secondary" onclick="copyCommand('cmd-orders')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="command-row">
+                    <pre><code id="cmd-notifications">curl -b cookies.txt -c cookies.txt http://localhost:8080/custom-proxy/notifications/101</code></pre>
+                    <div class="command-actions">
+                        <button onclick="callApi('/custom-proxy/notifications/101')">Run</button>
+                        <button class="secondary" onclick="copyCommand('cmd-notifications')">
+                            Copy
+                        </button>
+                    </div>
+                </div>
+
+                <div class="command-row">
+                    <pre><code id="cmd-alerts">curl -b cookies.txt -c cookies.txt http://localhost:8080/custom-proxy/alerts/202</code></pre>
+                    <div class="command-actions">
+                        <button onclick="callApi('/custom-proxy/alerts/202')">Run</button>
+                        <button class="secondary" onclick="copyCommand('cmd-alerts')">Copy</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Expected Behavior</h2>
+                <ul>
+                    <li>
+                        <code>/api/local/hello</code> returns a local controller response with the
+                        logged-in user.
+                    </li>
+                    <li>
+                        <code>/proxy/users/123</code> and <code>/proxy/orders/456</code> are
+                        forwarded by the gateway.
+                    </li>
+                    <li>
+                        <code>/custom-proxy/notifications/101</code> and
+                        <code>/custom-proxy/alerts/202</code> are forwarded by custom controller
+                        logic.
+                    </li>
+                    <li>The BFF creates an internal bearer token before forwarding.</li>
+                    <li>The browser only uses the BFF session cookie.</li>
+                </ul>
+            </div>
+        </div>
+
+        <script>
+            async function runLogin() {
+                const output = document.getElementById("output");
+                output.textContent = "Logging in as demoUser123 ...";
+
+                try {
+                    const response = await fetch("/login", {
+                        method: "POST",
+                        credentials: "include",
+                        headers: {
+                            "Content-Type": "application/x-www-form-urlencoded",
+                        },
+                        body: "username=demoUser123&password=password",
+                    });
+
+                    output.textContent =
+                        "Login request completed. HTTP " +
+                        response.status +
+                        "\n\nNow call one of the protected endpoints.";
+                } catch (error) {
+                    output.textContent = "Login failed: " + error;
+                }
+            }
+
+            async function callApi(path) {
+                const output = document.getElementById("output");
+                output.textContent = "Loading " + path + " ...";
+
+                try {
+                    const response = await fetch(path, {
+                        credentials: "include",
+                    });
+
+                    const text = await response.text();
+                    output.textContent = "HTTP " + response.status + "\n\n" + text;
+                } catch (error) {
+                    output.textContent = "Request failed: " + error;
+                }
+            }
+
+            async function copyCommand(elementId) {
+                const command = document.getElementById(elementId).textContent;
+                const output = document.getElementById("output");
+
+                try {
+                    await navigator.clipboard.writeText(command);
+                    output.textContent = "Copied command to clipboard:\n\n" + command;
+                } catch (error) {
+                    output.textContent = "Copy failed: " + error;
+                }
+            }
+        </script>
+    </body>
+</html>
