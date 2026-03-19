@@ -5,7 +5,7 @@ Sample Spring Boot 3.5.6 microservice running on port `8081`.
 Behavior:
 
 - receives requests from the BFF route `/proxy/users/**`
-- validates the JWT signature with the exported public certificate/public key
+- validates the JWT signature with the configured RSA public key string
 - checks issuer `bff-service`
 - checks audience `internal-api`
 

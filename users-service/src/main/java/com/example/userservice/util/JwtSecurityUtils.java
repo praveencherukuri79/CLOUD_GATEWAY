@@ -1,13 +1,10 @@
 package com.example.userservice.util;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
+import java.security.KeyFactory;
 import java.security.interfaces.RSAPublicKey;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
 import java.util.List;
-import org.springframework.core.io.Resource;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.JwtClaimValidator;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -20,10 +17,9 @@ public final class JwtSecurityUtils {
 
     private JwtSecurityUtils() {}
 
-    public static JwtDecoder jwtDecoder(
-            Resource publicCertLocation, String issuer, String audience) {
+        public static JwtDecoder jwtDecoder(String publicKeyPem, String issuer, String audience) {
         NimbusJwtDecoder decoder =
-                NimbusJwtDecoder.withPublicKey(loadPublicKey(publicCertLocation)).build();
+            NimbusJwtDecoder.withPublicKey(loadPublicKey(publicKeyPem)).build();
         decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
                 JwtValidators.createDefaultWithIssuer(issuer),
                 new JwtClaimValidator<List<String>>("aud", aud -> aud != null && aud.contains(audience))));
@@ -40,14 +36,19 @@ public final class JwtSecurityUtils {
         return converter;
     }
 
-    private static RSAPublicKey loadPublicKey(Resource certLocation) {
-        try (InputStream is = certLocation.getInputStream()) {
-            X509Certificate cert = (X509Certificate)
-                    CertificateFactory.getInstance("X.509").generateCertificate(is);
-            return (RSAPublicKey) cert.getPublicKey();
-        } catch (CertificateException | IOException ex) {
-            throw new IllegalStateException(
-                    "Failed to load RSA public key from certificate: " + certLocation, ex);
+    private static RSAPublicKey loadPublicKey(String publicKeyPem) {
+        try {
+            String normalizedKey =
+                    publicKeyPem
+                            .replace("-----BEGIN PUBLIC KEY-----", "")
+                            .replace("-----END PUBLIC KEY-----", "")
+                            .replaceAll("\\s+", "");
+
+            byte[] keyBytes = Base64.getDecoder().decode(normalizedKey);
+            X509EncodedKeySpec keySpec = new X509EncodedKeySpec(keyBytes);
+            return (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(keySpec);
+        } catch (Exception ex) {
+            throw new IllegalStateException("Failed to load RSA public key from configured string", ex);
         }
     }
 }

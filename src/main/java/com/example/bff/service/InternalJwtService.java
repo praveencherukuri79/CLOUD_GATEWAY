@@ -2,17 +2,17 @@ package com.example.bff.service;
 
 import io.jsonwebtoken.Jwts;
 import jakarta.annotation.PostConstruct;
-import java.io.InputStream;
-import java.security.KeyStore;
+import java.security.KeyFactory;
 import java.security.PrivateKey;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
@@ -30,30 +30,22 @@ public class InternalJwtService {
     @Value("${app.internal-jwt.ttl-seconds}")
     long ttlSeconds;
 
-    @Value("${app.internal-jwt.private-key-store-location}")
-    Resource privateKeyStoreLocation;
-
-    @Value("${app.internal-jwt.private-key-store-password}")
-    String privateKeyStorePassword;
-
-    @Value("${app.internal-jwt.private-key-alias}")
-    String privateKeyAlias;
-
-    @Value("${app.internal-jwt.private-key-password}")
-    String privateKeyPassword;
+    @Value("${app.internal-jwt.private-key}")
+    String privateKeyPem;
 
     PrivateKey signingKey;
 
     @PostConstruct
     void loadSigningKey() throws Exception {
-        KeyStore keyStore = KeyStore.getInstance("PKCS12");
-        try (InputStream inputStream = privateKeyStoreLocation.getInputStream()) {
-            keyStore.load(inputStream, privateKeyStorePassword.toCharArray());
-        }
+        String normalizedKey =
+                privateKeyPem
+                        .replace("-----BEGIN PRIVATE KEY-----", "")
+                        .replace("-----END PRIVATE KEY-----", "")
+                        .replaceAll("\\s+", "");
 
-        this.signingKey =
-                (PrivateKey)
-                        keyStore.getKey(privateKeyAlias, privateKeyPassword.toCharArray());
+        byte[] keyBytes = Base64.getDecoder().decode(normalizedKey);
+        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
+        this.signingKey = KeyFactory.getInstance("RSA").generatePrivate(keySpec);
     }
 
     public String createToken(Authentication authentication) {

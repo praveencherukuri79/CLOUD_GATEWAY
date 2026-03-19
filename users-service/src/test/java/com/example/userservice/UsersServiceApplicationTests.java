@@ -5,10 +5,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import io.jsonwebtoken.Jwts;
-import java.io.InputStream;
-import java.security.KeyStore;
+import java.security.KeyFactory;
 import java.security.PrivateKey;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +18,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.io.Resource;
 import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
@@ -27,8 +27,8 @@ class UsersServiceApplicationTests {
     @Autowired
     MockMvc mockMvc;
 
-    @Value("file:../src/main/resources/keys/bff-jwt-keystore.p12")
-    Resource privateKeyStore;
+    @Value("${test.jwt.private-key}")
+    String privateKeyPem;
 
     @Test
     void pingShouldBePublic() throws Exception {
@@ -61,12 +61,15 @@ class UsersServiceApplicationTests {
     }
 
     private String createSignedToken(String subject, List<String> roles) throws Exception {
-        KeyStore keyStore = KeyStore.getInstance("PKCS12");
-        try (InputStream inputStream = privateKeyStore.getInputStream()) {
-            keyStore.load(inputStream, "changeit".toCharArray());
-        }
+        String normalizedKey =
+            privateKeyPem
+                .replace("-----BEGIN PRIVATE KEY-----", "")
+                .replace("-----END PRIVATE KEY-----", "")
+                .replaceAll("\\s+", "");
 
-        PrivateKey privateKey = (PrivateKey) keyStore.getKey("bff-jwt-key", "changeit".toCharArray());
+        byte[] keyBytes = Base64.getDecoder().decode(normalizedKey);
+        PrivateKey privateKey =
+            KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(keyBytes));
         Instant now = Instant.now();
 
         return Jwts.builder()
