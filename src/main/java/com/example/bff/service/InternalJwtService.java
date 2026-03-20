@@ -2,10 +2,12 @@ package com.example.bff.service;
 
 import io.jsonwebtoken.Jwts;
 import jakarta.annotation.PostConstruct;
-import java.io.InputStream;
-import java.security.KeyStore;
+import java.nio.charset.StandardCharsets;
+import java.security.KeyFactory;
 import java.security.PrivateKey;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -30,30 +32,22 @@ public class InternalJwtService {
     @Value("${app.internal-jwt.ttl-seconds}")
     long ttlSeconds;
 
-    @Value("${app.internal-jwt.private-key-store-location}")
-    Resource privateKeyStoreLocation;
-
-    @Value("${app.internal-jwt.private-key-store-password}")
-    String privateKeyStorePassword;
-
-    @Value("${app.internal-jwt.private-key-alias}")
-    String privateKeyAlias;
-
-    @Value("${app.internal-jwt.private-key-password}")
-    String privateKeyPassword;
+    @Value("${app.internal-jwt.private-key-location}")
+    Resource privateKeyLocation;
 
     PrivateKey signingKey;
 
     @PostConstruct
     void loadSigningKey() throws Exception {
-        KeyStore keyStore = KeyStore.getInstance("PKCS12");
-        try (InputStream inputStream = privateKeyStoreLocation.getInputStream()) {
-            keyStore.load(inputStream, privateKeyStorePassword.toCharArray());
-        }
+        String pem = privateKeyLocation.getContentAsString(StandardCharsets.UTF_8);
+        String normalizedKey =
+                pem.replace("-----BEGIN PRIVATE KEY-----", "")
+                        .replace("-----END PRIVATE KEY-----", "")
+                        .replaceAll("\\s+", "");
 
+        byte[] keyBytes = Base64.getDecoder().decode(normalizedKey);
         this.signingKey =
-                (PrivateKey)
-                        keyStore.getKey(privateKeyAlias, privateKeyPassword.toCharArray());
+                KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(keyBytes));
     }
 
     public String createToken(Authentication authentication) {

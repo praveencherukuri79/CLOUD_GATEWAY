@@ -1,14 +1,15 @@
 package com.example.userservice.util;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
+import java.nio.charset.StandardCharsets;
+import java.security.KeyFactory;
 import java.security.interfaces.RSAPublicKey;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
 import java.util.List;
 import org.springframework.core.io.Resource;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtClaimValidator;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
@@ -20,13 +21,14 @@ public final class JwtSecurityUtils {
 
     private JwtSecurityUtils() {}
 
-    public static JwtDecoder jwtDecoder(
-            Resource publicCertLocation, String issuer, String audience) {
+        public static JwtDecoder jwtDecoder(Resource publicKeyLocation, String issuer, String audience) {
         NimbusJwtDecoder decoder =
-                NimbusJwtDecoder.withPublicKey(loadPublicKey(publicCertLocation)).build();
-        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
-                JwtValidators.createDefaultWithIssuer(issuer),
-                new JwtClaimValidator<List<String>>("aud", aud -> aud != null && aud.contains(audience))));
+            NimbusJwtDecoder.withPublicKey(loadPublicKey(publicKeyLocation)).build();
+        OAuth2TokenValidator<Jwt> issuerValidator = JwtValidators.createDefaultWithIssuer(issuer);
+        JwtClaimValidator<List<String>> audienceValidator =
+            new JwtClaimValidator<>("aud", aud -> aud != null && aud.contains(audience));
+        decoder.setJwtValidator(
+            new DelegatingOAuth2TokenValidator<>(issuerValidator, audienceValidator));
         return decoder;
     }
 
@@ -40,14 +42,20 @@ public final class JwtSecurityUtils {
         return converter;
     }
 
-    private static RSAPublicKey loadPublicKey(Resource certLocation) {
-        try (InputStream is = certLocation.getInputStream()) {
-            X509Certificate cert = (X509Certificate)
-                    CertificateFactory.getInstance("X.509").generateCertificate(is);
-            return (RSAPublicKey) cert.getPublicKey();
-        } catch (CertificateException | IOException ex) {
+    private static RSAPublicKey loadPublicKey(Resource publicKeyLocation) {
+        try {
+            String pem = publicKeyLocation.getContentAsString(StandardCharsets.UTF_8);
+            String normalizedKey =
+                    pem.replace("-----BEGIN PUBLIC KEY-----", "")
+                            .replace("-----END PUBLIC KEY-----", "")
+                            .replaceAll("\\s+", "");
+
+            byte[] keyBytes = Base64.getDecoder().decode(normalizedKey);
+            return (RSAPublicKey)
+                    KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(keyBytes));
+        } catch (Exception ex) {
             throw new IllegalStateException(
-                    "Failed to load RSA public key from certificate: " + certLocation, ex);
+                    "Failed to load RSA public key from PEM file: " + publicKeyLocation, ex);
         }
     }
 }

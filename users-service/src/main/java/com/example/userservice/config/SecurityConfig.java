@@ -14,8 +14,8 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 public class SecurityConfig {
 
-    @Value("${app.security.jwt.public-cert-location}")
-    private Resource publicCertLocation;
+        @Value("${app.security.jwt.public-key-location}")
+        private Resource publicKeyLocation;
 
     @Value("${app.security.jwt.issuer}")
     private String issuer;
@@ -44,7 +44,7 @@ public class SecurityConfig {
 
     @Bean
     JwtDecoder jwtDecoder() {
-        return JwtSecurityUtils.jwtDecoder(publicCertLocation, issuer, audience);
+                return JwtSecurityUtils.jwtDecoder(publicKeyLocation, issuer, audience);
     }
 
     @Bean

@@ -1,14 +1,6 @@
-server:
-    port: 8081
-
 app:
     security:
         jwt:
             public-key-location: classpath:keys/bff-jwt-public.pem
             issuer: bff-service
             audience: internal-api
-
-logging:
-    level:
-        com.example.userservice: INFO
-        org.springframework.security: INFO
