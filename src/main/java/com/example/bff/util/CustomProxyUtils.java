@@ -2,7 +2,8 @@ package com.example.bff.util;
 
 import com.example.bff.filter.InternalJwtRelayFilter;
 import jakarta.servlet.http.HttpServletRequest;
-import java.util.Enumeration;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.http.HttpHeaders;
@@ -12,6 +13,12 @@ public final class CustomProxyUtils {
 
     private static final String PROXY_MODE_HEADER = "X-Proxy-Mode";
     private static final String CUSTOM_PROXY_MODE = "custom";
+    private static final List<String> EXCLUDED_OUTBOUND_HEADERS =
+        List.of(
+            HttpHeaders.HOST,
+            HttpHeaders.COOKIE,
+            HttpHeaders.AUTHORIZATION,
+            HttpHeaders.CONTENT_LENGTH);
 
     private CustomProxyUtils() {}
 
@@ -24,12 +31,7 @@ public final class CustomProxyUtils {
     public static String buildTargetUri(
             HttpServletRequest request, String routePrefix, String targetBaseUri) {
         String requestPath = normalizeRequestPath(request);
-        String downstreamPath =
-                requestPath.startsWith(routePrefix) ? requestPath.substring(routePrefix.length()) : "";
-
-        if (!StringUtils.hasText(downstreamPath)) {
-            downstreamPath = "/";
-        }
+        String downstreamPath = resolveDownstreamPath(requestPath, routePrefix);
 
         String normalizedBaseUri =
                 targetBaseUri.endsWith("/")
@@ -55,24 +57,32 @@ public final class CustomProxyUtils {
         return requestUri;
     }
 
+    private static String resolveDownstreamPath(String requestPath, String routePrefix) {
+        if (!requestPath.startsWith(routePrefix)) {
+            return requestPath;
+        }
+
+        String downstreamPath = requestPath.substring(routePrefix.length());
+        return StringUtils.hasText(downstreamPath) ? downstreamPath : "/";
+    }
+
     public static HttpHeaders buildOutboundHeaders(
             HttpServletRequest request, String appUser, String correlationId, String token) {
         HttpHeaders headers = new HttpHeaders();
-        Enumeration<String> headerNames = request.getHeaderNames();
+        List<String> headerNames =
+                request.getHeaderNames() == null
+                        ? List.of()
+                        : Collections.list(request.getHeaderNames());
 
-        while (headerNames != null && headerNames.hasMoreElements()) {
-            String headerName = headerNames.nextElement();
+        for (String headerName : headerNames) {
 
-            if (HttpHeaders.HOST.equalsIgnoreCase(headerName)
-                    || HttpHeaders.COOKIE.equalsIgnoreCase(headerName)
-                    || HttpHeaders.AUTHORIZATION.equalsIgnoreCase(headerName)
-                    || HttpHeaders.CONTENT_LENGTH.equalsIgnoreCase(headerName)) {
+            if (isExcludedOutboundHeader(headerName)) {
                 continue;
             }
 
-            Enumeration<String> headerValues = request.getHeaders(headerName);
-            while (headerValues.hasMoreElements()) {
-                headers.add(headerName, headerValues.nextElement());
+            List<String> headerValues = Collections.list(request.getHeaders(headerName));
+            for (String headerValue : headerValues) {
+                headers.add(headerName, headerValue);
             }
         }
 
@@ -98,6 +108,15 @@ public final class CustomProxyUtils {
 
     public static boolean hasBody(byte[] body) {
         return body != null && body.length > 0;
+    }
+
+    private static boolean isExcludedOutboundHeader(String headerName) {
+        for (String excludedHeader : EXCLUDED_OUTBOUND_HEADERS) {
+            if (excludedHeader.equalsIgnoreCase(headerName)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static HttpHeaders copyHeaders(HttpHeaders source) {
