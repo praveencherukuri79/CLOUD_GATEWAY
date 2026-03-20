@@ -7,7 +7,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -31,11 +30,9 @@ public class CustomProxyController {
     @RequestMapping({"/notifications", "/notifications/{*path}"})
     public ResponseEntity<byte[]> proxyNotifications(
             HttpServletRequest request,
-            Authentication authentication,
             @RequestBody(required = false) byte[] body) {
         return customProxyService.forward(
                 request,
-                authentication,
                 body,
                 CUSTOM_PROXY_PREFIX,
                 notificationsServiceUri,
@@ -45,11 +42,9 @@ public class CustomProxyController {
     @RequestMapping({"/alerts", "/alerts/{*path}"})
     public ResponseEntity<byte[]> proxyAlerts(
             HttpServletRequest request,
-            Authentication authentication,
             @RequestBody(required = false) byte[] body) {
         return customProxyService.forward(
                 request,
-                authentication,
                 body,
                 CUSTOM_PROXY_PREFIX,
                 alertsServiceUri,

@@ -14,8 +14,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
@@ -34,14 +34,12 @@ public class CustomProxyService {
 
     public ResponseEntity<byte[]> forward(
             HttpServletRequest request,
-            Authentication authentication,
             byte[] body,
             String routePrefix,
             String targetBaseUri,
             String routeId) {
-        String requestPath = request.getRequestURI();
         String correlationId = CustomProxyUtils.resolveCorrelationId(request);
-        validateAuthentication(authentication, requestPath, correlationId);
+                Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         String targetUri = CustomProxyUtils.buildTargetUri(request, routePrefix, targetBaseUri);
         String appUser = authentication.getName();
@@ -75,22 +73,6 @@ public class CustomProxyService {
             throw new ProxyRequestException(
                     HttpStatus.BAD_GATEWAY,
                     "Custom proxy target is unavailable for route " + routeId,
-                    correlationId);
-        }
-    }
-
-    private void validateAuthentication(
-            Authentication authentication, String path, String correlationId) {
-        if (authentication == null
-                || !authentication.isAuthenticated()
-                || authentication instanceof AnonymousAuthenticationToken) {
-            log.warn(
-                    "No authenticated user found for custom proxy path={} correlationId={}",
-                    path,
-                    correlationId);
-            throw new ProxyRequestException(
-                    HttpStatus.UNAUTHORIZED,
-                    "No authenticated user found in SecurityContext",
                     correlationId);
         }
     }
