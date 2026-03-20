@@ -39,7 +39,7 @@ public class CustomProxyService {
             String targetBaseUri,
             String routeId) {
         String correlationId = CustomProxyUtils.resolveCorrelationId(request);
-                Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         String targetUri = CustomProxyUtils.buildTargetUri(request, routePrefix, targetBaseUri);
         String appUser = authentication.getName();

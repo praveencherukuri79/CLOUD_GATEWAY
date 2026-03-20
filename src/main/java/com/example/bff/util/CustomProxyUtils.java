@@ -23,7 +23,7 @@ public final class CustomProxyUtils {
 
     public static String buildTargetUri(
             HttpServletRequest request, String routePrefix, String targetBaseUri) {
-        String requestPath = request.getRequestURI();
+        String requestPath = normalizeRequestPath(request);
         String downstreamPath =
                 requestPath.startsWith(routePrefix) ? requestPath.substring(routePrefix.length()) : "";
 
@@ -41,6 +41,18 @@ public final class CustomProxyUtils {
         return normalizedBaseUri
                 + normalizedPath
                 + (StringUtils.hasText(queryString) ? "?" + queryString : "");
+    }
+
+    private static String normalizeRequestPath(HttpServletRequest request) {
+        String requestUri = request.getRequestURI();
+        String contextPath = request.getContextPath();
+
+        if (StringUtils.hasText(contextPath) && requestUri.startsWith(contextPath)) {
+            String pathWithoutContext = requestUri.substring(contextPath.length());
+            return StringUtils.hasText(pathWithoutContext) ? pathWithoutContext : "/";
+        }
+
+        return requestUri;
     }
 
     public static HttpHeaders buildOutboundHeaders(
