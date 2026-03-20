@@ -5,19 +5,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import io.jsonwebtoken.Jwts;
-import java.io.InputStream;
-import java.security.KeyStore;
-import java.security.PrivateKey;
+import io.jsonwebtoken.security.Keys;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import javax.crypto.SecretKey;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.io.Resource;
 import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
@@ -27,8 +26,8 @@ class UsersServiceApplicationTests {
     @Autowired
     MockMvc mockMvc;
 
-    @Value("file:../src/main/resources/keys/bff-jwt-keystore.p12")
-    Resource privateKeyStore;
+    @Value("${app.security.jwt.secret}")
+    String secret;
 
     @Test
     void pingShouldBePublic() throws Exception {
@@ -61,13 +60,8 @@ class UsersServiceApplicationTests {
     }
 
     private String createSignedToken(String subject, List<String> roles) throws Exception {
-        KeyStore keyStore = KeyStore.getInstance("PKCS12");
-        try (InputStream inputStream = privateKeyStore.getInputStream()) {
-            keyStore.load(inputStream, "changeit".toCharArray());
-        }
-
-        PrivateKey privateKey = (PrivateKey) keyStore.getKey("bff-jwt-key", "changeit".toCharArray());
         Instant now = Instant.now();
+        SecretKey signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
 
         return Jwts.builder()
                 .issuer("bff-service")
@@ -78,7 +72,7 @@ class UsersServiceApplicationTests {
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusSeconds(300)))
                 .claims(Map.of("roles", roles))
-                .signWith(privateKey, Jwts.SIG.RS256)
+                .signWith(signingKey, Jwts.SIG.HS256)
                 .compact();
     }
 }

@@ -1,14 +1,6 @@
-server:
-    port: 8081
-
 app:
     security:
         jwt:
             secret: replace-this-with-a-long-shared-hmac-secret-key-12345678901234567890
             issuer: bff-service
             audience: internal-api
-
-logging:
-    level:
-        com.example.userservice: INFO
-        org.springframework.security: INFO
