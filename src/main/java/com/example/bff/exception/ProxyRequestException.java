@@ -1,7 +1,9 @@
 package com.example.bff.exception;
 
+import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
+@Getter
 public class ProxyRequestException extends RuntimeException {
 
     private final HttpStatus status;
@@ -11,13 +13,5 @@ public class ProxyRequestException extends RuntimeException {
         super(message);
         this.status = status;
         this.correlationId = correlationId;
-    }
-
-    public HttpStatus getStatus() {
-        return status;
-    }
-
-    public String getCorrelationId() {
-        return correlationId;
     }
 }

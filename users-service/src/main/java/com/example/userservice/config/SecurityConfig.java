@@ -4,7 +4,6 @@ import com.example.userservice.util.JwtSecurityUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.Resource;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -20,8 +19,8 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 public class SecurityConfig {
 
-        @Value("${app.security.jwt.public-key-location}")
-        private Resource publicKeyLocation;
+    @Value("${app.security.jwt.jwks-uri}")
+    private String jwksUri;
 
     @Value("${app.security.jwt.issuer}")
     private String issuer;
@@ -35,7 +34,7 @@ public class SecurityConfig {
             JwtDecoder jwtDecoder,
             JwtAuthenticationConverter jwtAuthenticationConverter)
             throws Exception {
-                
+
         return http.csrf(csrf -> csrf.disable())
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -50,7 +49,7 @@ public class SecurityConfig {
 
     @Bean
     JwtDecoder jwtDecoder() {
-                return JwtSecurityUtils.jwtDecoder(publicKeyLocation, issuer, audience);
+        return JwtSecurityUtils.jwtDecoder(jwksUri, issuer, audience);
     }
 
     @Bean

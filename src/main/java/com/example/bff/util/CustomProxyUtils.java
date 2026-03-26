@@ -2,8 +2,7 @@ package com.example.bff.util;
 
 import com.example.bff.filter.InternalJwtRelayFilter;
 import jakarta.servlet.http.HttpServletRequest;
-import java.util.Collections;
-import java.util.List;
+import java.util.Enumeration;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.http.HttpHeaders;
@@ -13,12 +12,6 @@ public final class CustomProxyUtils {
 
     private static final String PROXY_MODE_HEADER = "X-Proxy-Mode";
     private static final String CUSTOM_PROXY_MODE = "custom";
-    private static final List<String> EXCLUDED_OUTBOUND_HEADERS =
-        List.of(
-            HttpHeaders.HOST,
-            HttpHeaders.COOKIE,
-            HttpHeaders.AUTHORIZATION,
-            HttpHeaders.CONTENT_LENGTH);
 
     private CustomProxyUtils() {}
 
@@ -70,20 +63,21 @@ public final class CustomProxyUtils {
     public static HttpHeaders buildOutboundHeaders(
             HttpServletRequest request, String appUser, String correlationId, String token) {
         HttpHeaders headers = new HttpHeaders();
-        List<String> headerNames =
-                request.getHeaderNames() == null
-                        ? List.of()
-                        : Collections.list(request.getHeaderNames());
+        Enumeration<String> headerNames = request.getHeaderNames();
 
-        for (String headerName : headerNames) {
+        while (headerNames != null && headerNames.hasMoreElements()) {
+            String headerName = headerNames.nextElement();
 
-            if (isExcludedOutboundHeader(headerName)) {
+            if (headerName.equalsIgnoreCase(HttpHeaders.HOST)
+                    || headerName.equalsIgnoreCase(HttpHeaders.COOKIE)
+                    || headerName.equalsIgnoreCase(HttpHeaders.AUTHORIZATION)
+                    || headerName.equalsIgnoreCase(HttpHeaders.CONTENT_LENGTH)) {
                 continue;
             }
 
-            List<String> headerValues = Collections.list(request.getHeaders(headerName));
-            for (String headerValue : headerValues) {
-                headers.add(headerName, headerValue);
+            Enumeration<String> headerValues = request.getHeaders(headerName);
+            while (headerValues.hasMoreElements()) {
+                headers.add(headerName, headerValues.nextElement());
             }
         }
 
@@ -109,15 +103,6 @@ public final class CustomProxyUtils {
 
     public static boolean hasBody(byte[] body) {
         return body != null && body.length > 0;
-    }
-
-    private static boolean isExcludedOutboundHeader(String headerName) {
-        for (String excludedHeader : EXCLUDED_OUTBOUND_HEADERS) {
-            if (excludedHeader.equalsIgnoreCase(headerName)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private static HttpHeaders copyHeaders(HttpHeaders source) {

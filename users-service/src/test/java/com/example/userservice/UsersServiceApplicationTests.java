@@ -5,32 +5,56 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import io.jsonwebtoken.Jwts;
-import java.nio.charset.StandardCharsets;
-import java.security.KeyFactory;
-import java.security.PrivateKey;
-import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.time.Instant;
-import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.io.Resource;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Import(UsersServiceApplicationTests.JwksTestConfig.class)
 class UsersServiceApplicationTests {
+
+    static final KeyPair KEY_PAIR;
+
+    static {
+        try {
+            KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+            generator.initialize(2048);
+            KEY_PAIR = generator.generateKeyPair();
+        } catch (Exception ex) {
+            throw new IllegalStateException("Failed to generate test RSA key pair", ex);
+        }
+    }
+
+    @TestConfiguration
+    static class JwksTestConfig {
+        @Bean
+        @Primary
+        JwtDecoder testJwtDecoder() {
+            return NimbusJwtDecoder
+                    .withPublicKey((RSAPublicKey) KEY_PAIR.getPublic())
+                    .build();
+        }
+    }
 
     @Autowired
     MockMvc mockMvc;
-
-    @Value("file:../src/main/resources/keys/bff-jwt-private.pem")
-    Resource privateKeyFile;
 
     @Test
     void pingShouldBePublic() throws Exception {
@@ -62,16 +86,8 @@ class UsersServiceApplicationTests {
                 .andExpect(jsonPath("$.correlationId").value("corr-101"));
     }
 
-    private String createSignedToken(String subject, List<String> roles) throws Exception {
-        String pem = privateKeyFile.getContentAsString(StandardCharsets.UTF_8);
-        String normalizedKey =
-            pem.replace("-----BEGIN PRIVATE KEY-----", "")
-                .replace("-----END PRIVATE KEY-----", "")
-                .replaceAll("\\s+", "");
-
-        byte[] keyBytes = Base64.getDecoder().decode(normalizedKey);
-        PrivateKey privateKey =
-            KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(keyBytes));
+    private String createSignedToken(String subject, List<String> roles) {
+        RSAPrivateKey privateKey = (RSAPrivateKey) KEY_PAIR.getPrivate();
         Instant now = Instant.now();
 
         return Jwts.builder()

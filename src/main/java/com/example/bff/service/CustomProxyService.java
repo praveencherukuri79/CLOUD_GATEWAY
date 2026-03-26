@@ -3,9 +3,7 @@ package com.example.bff.service;
 import com.example.bff.exception.ProxyRequestException;
 import com.example.bff.util.CustomProxyUtils;
 import jakarta.servlet.http.HttpServletRequest;
-
 import java.net.URI;
-
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -28,7 +26,7 @@ import org.springframework.web.client.RestClientResponseException;
 public class CustomProxyService {
 
     static final String CUSTOM_ROUTE_HEADER = "X-Custom-Route";
-        static final String X_FORWARDED_FOR_HEADER = "X-Forwarded-For";
+    static final String X_FORWARDED_FOR_HEADER = "X-Forwarded-For";
 
     InternalJwtService internalJwtService;
     RestClient restClient = RestClient.create();
@@ -123,13 +121,13 @@ public class CustomProxyService {
                 ex.getResponseBodyAsByteArray(), responseHeaders, ex.getStatusCode());
     }
 
-        private String resolveClientIp(HttpServletRequest request) {
-                String forwardedFor = request.getHeader(X_FORWARDED_FOR_HEADER);
+    private String resolveClientIp(HttpServletRequest request) {
+        String forwardedFor = request.getHeader(X_FORWARDED_FOR_HEADER);
 
-                if (forwardedFor != null && !forwardedFor.isBlank()) {
-                        return forwardedFor.split(",")[0].trim();
-                }
-
-                return request.getRemoteAddr();
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
         }
+
+        return request.getRemoteAddr();
+    }
 }

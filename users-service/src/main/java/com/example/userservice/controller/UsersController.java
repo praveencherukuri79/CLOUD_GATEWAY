@@ -35,11 +35,5 @@ public class UsersController {
         response.put("xAppUser", appUser != null ? appUser : "n/a");
         response.put("correlationId", correlationId != null ? correlationId : "n/a");
         return response;
-
-        // jwt.getSubject()
-        // jwt.getClaimAsString("email")
-        // jwt.getClaimAsString("username")
-        // jwt.getClaimAsStringList("roles")
-        // jwt.getClaimAsString("ipAddress")
     }
 }

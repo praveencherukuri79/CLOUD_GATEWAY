@@ -4,7 +4,7 @@ server:
 app:
     security:
         jwt:
-            public-key-location: classpath:keys/bff-jwt-public.pem
+            jwks-uri: http://localhost:8080/.well-known/jwks.json
             issuer: bff-service
             audience: internal-api
 
