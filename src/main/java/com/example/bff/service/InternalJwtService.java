@@ -1,11 +1,16 @@
 package com.example.bff.service;
 
 import com.example.bff.config.JwksKeyProvider;
-import io.jsonwebtoken.Jwts;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.RSASSASigner;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+import jakarta.annotation.PostConstruct;
 import java.time.Instant;
 import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -33,63 +38,54 @@ public class InternalJwtService {
 
     final JwksKeyProvider jwksKeyProvider;
 
+    JWSHeader jwsHeader;
+
+    @PostConstruct
+    void init() {
+        jwsHeader = new JWSHeader.Builder(JWSAlgorithm.RS256)
+                .keyID(jwksKeyProvider.getKeyId())
+                .build();
+    }
+
     public String createToken(Authentication authentication, String ipAddress) {
         Instant now = Instant.now();
-
-        List<String> roles =
-                authentication.getAuthorities().stream()
-                        .map(GrantedAuthority::getAuthority)
-                        .toList();
-
-        LinkedHashMap<String, Object> claims = new LinkedHashMap<>();
-        claims.put("roles", roles);
-        addOidcClaims(authentication, claims);
-
-        if (StringUtils.hasText(ipAddress)) {
-            claims.put("ipAddress", ipAddress);
-        }
-
-        return Jwts.builder()
-                .header().keyId(jwksKeyProvider.getKeyId()).and()
-                .issuer(issuer)
-                .subject(authentication.getName())
-                .audience()
-                .add(audience)
-                .and()
-                .issuedAt(Date.from(now))
-                .expiration(Date.from(now.plusSeconds(ttlSeconds)))
-                .claims(claims)
-                .signWith(jwksKeyProvider.getPrivateKey(), Jwts.SIG.RS256)
-                .compact();
-    }
-
-    private void addOidcClaims(Authentication authentication, LinkedHashMap<String, Object> claims) {
         Object principal = authentication.getPrincipal();
 
-        if (principal instanceof OidcUser oidcUser) {
-            putClaimIfPresent(claims, "username", resolveOidcUsername(oidcUser));
-            putClaimIfPresent(claims, "email", oidcUser.getEmail());
-            return;
+        JWTClaimsSet.Builder claims = new JWTClaimsSet.Builder()
+                .issuer(issuer)
+                .subject(authentication.getName())
+                .audience(audience)
+                .issueTime(Date.from(now))
+                .notBeforeTime(Date.from(now))
+                .expirationTime(Date.from(now.plusSeconds(ttlSeconds)))
+                .jwtID(UUID.randomUUID().toString())
+                .claim("roles", authentication.getAuthorities().stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .toList());
+
+        if (principal instanceof OidcUser oidc) {
+            String username = StringUtils.hasText(oidc.getClaimAsString("preferred_username"))
+                    ? oidc.getClaimAsString("preferred_username")
+                    : oidc.getName();
+            claims.claim("username", username);
+
+            if (StringUtils.hasText(oidc.getEmail())) {
+                claims.claim("email", oidc.getEmail());
+            }
+        } else if (principal instanceof AuthenticatedPrincipal named) {
+            claims.claim("username", named.getName());
         }
 
-        if (principal instanceof AuthenticatedPrincipal authenticatedPrincipal) {
-            putClaimIfPresent(claims, "username", authenticatedPrincipal.getName());
-        }
-    }
-
-    private String resolveOidcUsername(OidcUser oidcUser) {
-        String preferredUsername = oidcUser.getClaimAsString("preferred_username");
-        if (StringUtils.hasText(preferredUsername)) {
-            return preferredUsername;
+        if (StringUtils.hasText(ipAddress)) {
+            claims.claim("ipAddress", ipAddress);
         }
 
-        String name = oidcUser.getName();
-        return StringUtils.hasText(name) ? name : null;
-    }
-
-    private void putClaimIfPresent(LinkedHashMap<String, Object> claims, String claimName, String claimValue) {
-        if (StringUtils.hasText(claimValue)) {
-            claims.put(claimName, claimValue);
+        try {
+            SignedJWT jwt = new SignedJWT(jwsHeader, claims.build());
+            jwt.sign(new RSASSASigner(jwksKeyProvider.getPrivateKey()));
+            return jwt.serialize();
+        } catch (JOSEException ex) {
+            throw new IllegalStateException("Failed to sign JWT", ex);
         }
     }
 }

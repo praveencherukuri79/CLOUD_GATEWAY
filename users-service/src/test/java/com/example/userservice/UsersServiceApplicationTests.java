@@ -4,7 +4,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import io.jsonwebtoken.Jwts;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.RSASSASigner;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
@@ -12,7 +16,6 @@ import java.security.interfaces.RSAPublicKey;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -86,20 +89,23 @@ class UsersServiceApplicationTests {
                 .andExpect(jsonPath("$.correlationId").value("corr-101"));
     }
 
-    private String createSignedToken(String subject, List<String> roles) {
+    private String createSignedToken(String subject, List<String> roles) throws Exception {
         RSAPrivateKey privateKey = (RSAPrivateKey) KEY_PAIR.getPrivate();
         Instant now = Instant.now();
 
-        return Jwts.builder()
+        JWTClaimsSet claims = new JWTClaimsSet.Builder()
                 .issuer("bff-service")
                 .subject(subject)
-                .audience()
-                .add("internal-api")
-                .and()
-                .issuedAt(Date.from(now))
-                .expiration(Date.from(now.plusSeconds(300)))
-                .claims(Map.of("roles", roles))
-                .signWith(privateKey, Jwts.SIG.RS256)
-                .compact();
+                .audience("internal-api")
+                .issueTime(Date.from(now))
+                .expirationTime(Date.from(now.plusSeconds(300)))
+                .claim("roles", roles)
+                .build();
+
+        SignedJWT jwt = new SignedJWT(
+                new JWSHeader.Builder(JWSAlgorithm.RS256).build(),
+                claims);
+        jwt.sign(new RSASSASigner(privateKey));
+        return jwt.serialize();
     }
 }
