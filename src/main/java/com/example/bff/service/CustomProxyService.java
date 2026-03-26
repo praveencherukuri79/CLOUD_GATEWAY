@@ -28,6 +28,7 @@ import org.springframework.web.client.RestClientResponseException;
 public class CustomProxyService {
 
     static final String CUSTOM_ROUTE_HEADER = "X-Custom-Route";
+        static final String X_FORWARDED_FOR_HEADER = "X-Forwarded-For";
 
     InternalJwtService internalJwtService;
     RestClient restClient = RestClient.create();
@@ -43,7 +44,7 @@ public class CustomProxyService {
 
         String targetUri = CustomProxyUtils.buildTargetUri(request, routePrefix, targetBaseUri);
         String appUser = authentication.getName();
-        String token = internalJwtService.createToken(authentication);
+        String token = internalJwtService.createToken(authentication, resolveClientIp(request));
         HttpMethod method = HttpMethod.valueOf(request.getMethod());
         HttpHeaders outboundHeaders =
                 CustomProxyUtils.buildOutboundHeaders(request, appUser, correlationId, token);
@@ -121,4 +122,14 @@ public class CustomProxyService {
         return new ResponseEntity<>(
                 ex.getResponseBodyAsByteArray(), responseHeaders, ex.getStatusCode());
     }
+
+        private String resolveClientIp(HttpServletRequest request) {
+                String forwardedFor = request.getHeader(X_FORWARDED_FOR_HEADER);
+
+                if (forwardedFor != null && !forwardedFor.isBlank()) {
+                        return forwardedFor.split(",")[0].trim();
+                }
+
+                return request.getRemoteAddr();
+        }
 }

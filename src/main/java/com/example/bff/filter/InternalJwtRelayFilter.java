@@ -25,6 +25,7 @@ public class InternalJwtRelayFilter {
 
     public static final String APP_USER_HEADER = "X-APP-User";
     public static final String CORRELATION_ID_HEADER = "X-Correlation-Id";
+    private static final String X_FORWARDED_FOR_HEADER = "X-Forwarded-For";
 
     InternalJwtService internalJwtService;
 
@@ -47,7 +48,7 @@ public class InternalJwtRelayFilter {
                         correlationId);
             }
 
-            String token = internalJwtService.createToken(authentication);
+            String token = internalJwtService.createToken(authentication, resolveClientIp(request));
 
             return ServerRequest.from(request)
                     .headers(
@@ -65,5 +66,15 @@ public class InternalJwtRelayFilter {
         return Optional.ofNullable(request.headers().firstHeader(CORRELATION_ID_HEADER))
                 .filter(value -> !value.isBlank())
                 .orElseGet(() -> UUID.randomUUID().toString());
+    }
+
+    private String resolveClientIp(ServerRequest request) {
+        String forwardedFor = request.headers().firstHeader(X_FORWARDED_FOR_HEADER);
+
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
+
+        return request.servletRequest().getRemoteAddr();
     }
 }

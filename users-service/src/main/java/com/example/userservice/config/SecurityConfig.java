@@ -11,6 +11,12 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
+
+//Authoritative references:
+
+//Spring docs: https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/index.html
+//JWT section: https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/jwt.html
+
 @Configuration
 public class SecurityConfig {
 

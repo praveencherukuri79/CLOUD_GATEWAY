@@ -33,16 +33,12 @@ public final class CustomProxyUtils {
         String requestPath = normalizeRequestPath(request);
         String downstreamPath = resolveDownstreamPath(requestPath, routePrefix);
 
-        String normalizedBaseUri =
-                targetBaseUri.endsWith("/")
+        String normalizedBaseUri = targetBaseUri.endsWith("/")
                         ? targetBaseUri.substring(0, targetBaseUri.length() - 1)
                         : targetBaseUri;
-        String normalizedPath = downstreamPath.startsWith("/") ? downstreamPath : "/" + downstreamPath;
         String queryString = request.getQueryString();
 
-        return normalizedBaseUri
-                + normalizedPath
-                + (StringUtils.hasText(queryString) ? "?" + queryString : "");
+        return normalizedBaseUri + downstreamPath + (StringUtils.hasText(queryString) ? "?" + queryString : "");
     }
 
     private static String normalizeRequestPath(HttpServletRequest request) {
@@ -58,12 +54,17 @@ public final class CustomProxyUtils {
     }
 
     private static String resolveDownstreamPath(String requestPath, String routePrefix) {
-        if (!requestPath.startsWith(routePrefix)) {
-            return requestPath;
+        String downstreamPath = requestPath;
+
+        if (requestPath.startsWith(routePrefix)) {
+            downstreamPath = requestPath.substring(routePrefix.length());
         }
 
-        String downstreamPath = requestPath.substring(routePrefix.length());
-        return StringUtils.hasText(downstreamPath) ? downstreamPath : "/";
+        if (!StringUtils.hasText(downstreamPath)) {
+            return "/";
+        }
+
+        return downstreamPath.startsWith("/") ? downstreamPath : "/" + downstreamPath;
     }
 
     public static HttpHeaders buildOutboundHeaders(

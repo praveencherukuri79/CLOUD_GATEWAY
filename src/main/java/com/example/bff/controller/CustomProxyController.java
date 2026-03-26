@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class CustomProxyController {
 
     static final String CUSTOM_PROXY_PREFIX = "/custom-proxy";
+    static final String NOTIFICATIONS_PROXY_PREFIX = CUSTOM_PROXY_PREFIX + "/notifications";
+    static final String ALERTS_PROXY_PREFIX = CUSTOM_PROXY_PREFIX + "/alerts";
 
     final CustomProxyService customProxyService;
 
@@ -34,7 +36,7 @@ public class CustomProxyController {
         return customProxyService.forward(
                 request,
                 body,
-                CUSTOM_PROXY_PREFIX,
+            NOTIFICATIONS_PROXY_PREFIX,
                 notificationsServiceUri,
                 "notifications-custom-route");
     }
@@ -46,7 +48,7 @@ public class CustomProxyController {
         return customProxyService.forward(
                 request,
                 body,
-                CUSTOM_PROXY_PREFIX,
+            ALERTS_PROXY_PREFIX,
                 alertsServiceUri,
                 "alerts-custom-route");
     }
