@@ -1,6 +1,7 @@
 package com.example.bff.service;
 
 import com.example.bff.exception.ProxyRequestException;
+import com.example.bff.session.SessionKeys;
 import com.example.bff.util.CustomProxyUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
@@ -42,7 +43,11 @@ public class CustomProxyService {
 
         String targetUri = CustomProxyUtils.buildTargetUri(request, routePrefix, targetBaseUri);
         String appUser = authentication.getName();
-        String token = internalJwtService.createToken(authentication, resolveClientIp(request));
+        jakarta.servlet.http.HttpSession session = request.getSession(false);
+        String activeRole = session != null
+                ? (String) session.getAttribute(SessionKeys.ACTIVE_ROLE)
+                : null;
+        String token = internalJwtService.createToken(authentication, resolveClientIp(request), activeRole);
         HttpMethod method = HttpMethod.valueOf(request.getMethod());
         HttpHeaders outboundHeaders =
                 CustomProxyUtils.buildOutboundHeaders(request, appUser, correlationId, token);

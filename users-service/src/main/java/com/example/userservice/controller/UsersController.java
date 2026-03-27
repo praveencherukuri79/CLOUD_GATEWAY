@@ -3,6 +3,7 @@ package com.example.userservice.controller;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,18 +19,23 @@ public class UsersController {
         return Map.of("message", "users service is running");
     }
 
+    @PreAuthorize("hasAuthority('users.view')")
     @GetMapping("/users/{userId}")
     public Map<String, Object> getUser(
             @PathVariable String userId,
             @AuthenticationPrincipal Jwt jwt,
             @RequestHeader(name = "X-APP-User", required = false) String appUser,
             @RequestHeader(name = "X-Correlation-Id", required = false) String correlationId) {
+
+        String activeRole = jwt.getClaimAsString("activeRole");
+
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("id", userId);
         response.put("message", "users service accepted the JWT");
         response.put("jwtSubject", jwt.getSubject());
         response.put("jwtIssuer", jwt.getClaimAsString("iss"));
         response.put("jwtAudience", jwt.getAudience());
+        response.put("activeRole", activeRole != null ? activeRole : "n/a");
         response.put("roles", jwt.getClaimAsStringList("roles") != null
                 ? jwt.getClaimAsStringList("roles") : List.of());
         response.put("xAppUser", appUser != null ? appUser : "n/a");

@@ -2,6 +2,8 @@ package com.example.bff.filter;
 
 import com.example.bff.exception.ProxyRequestException;
 import com.example.bff.service.InternalJwtService;
+import com.example.bff.session.SessionKeys;
+import jakarta.servlet.http.HttpSession;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
@@ -48,7 +50,12 @@ public class InternalJwtRelayFilter {
                         correlationId);
             }
 
-            String token = internalJwtService.createToken(authentication, resolveClientIp(request));
+            HttpSession session = request.servletRequest().getSession(false);
+            String activeRole = session != null
+                    ? (String) session.getAttribute(SessionKeys.ACTIVE_ROLE)
+                    : null;
+
+            String token = internalJwtService.createToken(authentication, resolveClientIp(request), activeRole);
 
             return ServerRequest.from(request)
                     .headers(

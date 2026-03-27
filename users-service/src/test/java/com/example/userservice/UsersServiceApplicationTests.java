@@ -4,6 +4,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.example.userservice.model.RolePermissions;
+import com.example.userservice.service.ConfigServiceClient;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.RSASSASigner;
@@ -16,7 +18,9 @@ import java.security.interfaces.RSAPublicKey;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -54,6 +58,19 @@ class UsersServiceApplicationTests {
                     .withPublicKey((RSAPublicKey) KEY_PAIR.getPublic())
                     .build();
         }
+
+        @Bean
+        @Primary
+        ConfigServiceClient testConfigServiceClient() {
+            ConfigServiceClient mock = Mockito.mock(ConfigServiceClient.class);
+            Mockito.when(mock.getPermissions("ROLE_USER")).thenReturn(new RolePermissions("ROLE_USER",
+                    Map.of("users", Map.of("view", true, "edit", false),
+                            "orders", Map.of("view", true, "create", true))));
+            Mockito.when(mock.getPermissions("ROLE_VIEWER")).thenReturn(new RolePermissions("ROLE_VIEWER",
+                    Map.of("users", Map.of("view", true, "edit", false),
+                            "orders", Map.of("view", true, "create", false))));
+            return mock;
+        }
     }
 
     @Autowired
@@ -61,19 +78,19 @@ class UsersServiceApplicationTests {
 
     @Test
     void pingShouldBePublic() throws Exception {
-           mockMvc.perform(get("/public/ping"))
+        mockMvc.perform(get("/public/ping"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("users service is running"));
     }
 
     @Test
     void usersEndpointShouldRequireJwt() throws Exception {
-           mockMvc.perform(get("/users/101")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/users/101")).andExpect(status().isUnauthorized());
     }
 
     @Test
     void usersEndpointShouldAcceptBffSignedJwt() throws Exception {
-        String token = createSignedToken("demoUser123", List.of("ROLE_USER"));
+        String token = createSignedToken("demoUser123", List.of("ROLE_USER"), "ROLE_USER");
 
         mockMvc.perform(
                         get("/users/101")
@@ -84,27 +101,52 @@ class UsersServiceApplicationTests {
                 .andExpect(jsonPath("$.id").value("101"))
                 .andExpect(jsonPath("$.jwtSubject").value("demoUser123"))
                 .andExpect(jsonPath("$.jwtIssuer").value("bff-service"))
+                .andExpect(jsonPath("$.activeRole").value("ROLE_USER"))
                 .andExpect(jsonPath("$.roles[0]").value("ROLE_USER"))
                 .andExpect(jsonPath("$.xAppUser").value("demoUser123"))
                 .andExpect(jsonPath("$.correlationId").value("corr-101"));
     }
 
-    private String createSignedToken(String subject, List<String> roles) throws Exception {
+    @Test
+    void usersEndpointShouldDenyWithoutViewPermission() throws Exception {
+        String token = createSignedToken("viewerUser", List.of("ROLE_VIEWER"), "ROLE_VIEWER");
+
+        // ROLE_VIEWER has users.view=true, so this should succeed
+        mockMvc.perform(
+                        get("/users/101")
+                                .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void usersEndpointShouldDenyWithoutActiveRole() throws Exception {
+        String token = createSignedToken("noRoleUser", List.of("ROLE_USER"), null);
+
+        mockMvc.perform(
+                        get("/users/101")
+                                .header("Authorization", "Bearer " + token))
+                .andExpect(status().isForbidden());
+    }
+
+    private String createSignedToken(String subject, List<String> roles, String activeRole) throws Exception {
         RSAPrivateKey privateKey = (RSAPrivateKey) KEY_PAIR.getPrivate();
         Instant now = Instant.now();
 
-        JWTClaimsSet claims = new JWTClaimsSet.Builder()
+        JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder()
                 .issuer("bff-service")
                 .subject(subject)
                 .audience("internal-api")
                 .issueTime(Date.from(now))
                 .expirationTime(Date.from(now.plusSeconds(300)))
-                .claim("roles", roles)
-                .build();
+                .claim("roles", roles);
+
+        if (activeRole != null) {
+            builder.claim("activeRole", activeRole);
+        }
 
         SignedJWT jwt = new SignedJWT(
                 new JWSHeader.Builder(JWSAlgorithm.RS256).build(),
-                claims);
+                builder.build());
         jwt.sign(new RSASSASigner(privateKey));
         return jwt.serialize();
     }

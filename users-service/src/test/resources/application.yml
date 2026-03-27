@@ -4,3 +4,5 @@ app:
             jwks-uri: http://localhost:8080/.well-known/jwks.json
             issuer: bff-service
             audience: internal-api
+    config-service:
+        base-url: http://localhost:8085

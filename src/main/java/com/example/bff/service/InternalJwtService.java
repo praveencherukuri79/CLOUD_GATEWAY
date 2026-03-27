@@ -10,6 +10,7 @@ import com.nimbusds.jwt.SignedJWT;
 import jakarta.annotation.PostConstruct;
 import java.time.Instant;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -30,8 +31,8 @@ public class InternalJwtService {
     @Value("${app.internal-jwt.issuer}")
     String issuer;
 
-    @Value("${app.internal-jwt.audience}")
-    String audience;
+    @Value("#{'${app.internal-jwt.audience}'.split(',')}")
+    List<String> audience;
 
     @Value("${app.internal-jwt.ttl-seconds}")
     long ttlSeconds;
@@ -47,7 +48,7 @@ public class InternalJwtService {
                 .build();
     }
 
-    public String createToken(Authentication authentication, String ipAddress) {
+    public String createToken(Authentication authentication, String ipAddress, String activeRole) {
         Instant now = Instant.now();
         Object principal = authentication.getPrincipal();
 
@@ -62,6 +63,10 @@ public class InternalJwtService {
                 .claim("roles", authentication.getAuthorities().stream()
                         .map(GrantedAuthority::getAuthority)
                         .toList());
+
+        if (StringUtils.hasText(activeRole)) {
+            claims.claim("activeRole", activeRole);
+        }
 
         if (principal instanceof OidcUser oidc) {
             String username = StringUtils.hasText(oidc.getClaimAsString("preferred_username"))

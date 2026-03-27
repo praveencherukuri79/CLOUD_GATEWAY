@@ -7,6 +7,8 @@ app:
         audience: internal-api
         ttl-seconds: 300
         private-key-location: classpath:keys/bff-jwt-private.pem
+    config-service:
+        base-url: http://localhost:8085
     downstream:
         users: http://localhost:8081
         orders: http://localhost:8082
