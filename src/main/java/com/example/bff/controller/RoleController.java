@@ -1,7 +1,7 @@
 package com.example.bff.controller;
 
 import com.example.bff.model.RolePermissions;
-import com.example.bff.service.RolePermissionService;
+import com.example.bff.session.RoleSessionService;
 import com.example.bff.session.SessionKeys;
 import jakarta.servlet.http.HttpSession;
 import java.util.List;
@@ -24,8 +24,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class RoleController {
-
-    RolePermissionService rolePermissionService;
+    RoleSessionService roleSessionService;
 
     @GetMapping("/available")
     public Map<String, Object> availableRoles(Authentication authentication, HttpSession session) {
@@ -57,10 +56,7 @@ public class RoleController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User does not have role: " + selectedRole);
         }
 
-        RolePermissions permissions = rolePermissionService.fetchPermissions(selectedRole);
-        session.setAttribute(SessionKeys.ACTIVE_ROLE, selectedRole);
-        session.setAttribute(SessionKeys.ROLE_PERMISSIONS, permissions);
-        session.removeAttribute(SessionKeys.ROLE_SELECTION_REQUIRED);
+        RolePermissions permissions = roleSessionService.applyRole(authentication, session, selectedRole);
 
         return Map.of(
                 "activeRole", selectedRole,

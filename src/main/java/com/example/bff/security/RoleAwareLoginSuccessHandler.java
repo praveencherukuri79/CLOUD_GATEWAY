@@ -1,8 +1,6 @@
 package com.example.bff.security;
 
-import com.example.bff.model.RolePermissions;
-import com.example.bff.service.RolePermissionService;
-import com.example.bff.session.SessionKeys;
+import com.example.bff.session.RoleSessionService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -25,7 +23,7 @@ import org.springframework.stereotype.Component;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class RoleAwareLoginSuccessHandler implements AuthenticationSuccessHandler {
 
-    RolePermissionService rolePermissionService;
+    RoleSessionService roleSessionService;
     SavedRequestAwareAuthenticationSuccessHandler defaultHandler = new SavedRequestAwareAuthenticationSuccessHandler();
 
     @Override
@@ -39,19 +37,11 @@ public class RoleAwareLoginSuccessHandler implements AuthenticationSuccessHandle
         log.info("User {} logged in with roles={}", authentication.getName(), roles);
 
         if (roles.size() == 1) {
-            applyRole(session, roles.get(0));
+            roleSessionService.applyRole(authentication, session, roles.get(0));
             defaultHandler.onAuthenticationSuccess(request, response, authentication);
         } else {
-            session.setAttribute(SessionKeys.ROLE_SELECTION_REQUIRED, true);
+            roleSessionService.markRoleSelectionRequired(session);
             response.sendRedirect("/role-selection");
         }
-    }
-
-    private void applyRole(HttpSession session, String role) {
-        RolePermissions permissions = rolePermissionService.fetchPermissions(role);
-        session.setAttribute(SessionKeys.ACTIVE_ROLE, role);
-        session.setAttribute(SessionKeys.ROLE_PERMISSIONS, permissions);
-        session.removeAttribute(SessionKeys.ROLE_SELECTION_REQUIRED);
-        log.info("Applied role={} with {} features", role, permissions.getFeatures().size());
     }
 }
