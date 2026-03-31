@@ -1,7 +1,6 @@
 package com.example.bff.session;
 
 import com.example.bff.model.RolePermissions;
-import com.example.bff.security.SecurityContextHelper;
 import com.example.bff.service.RolePermissionService;
 import jakarta.servlet.http.HttpSession;
 import lombok.AccessLevel;
@@ -25,8 +24,6 @@ public class RoleSessionService {
         session.setAttribute(SessionKeys.ACTIVE_ROLE, role);
         session.setAttribute(SessionKeys.ROLE_PERMISSIONS, permissions);
         session.removeAttribute(SessionKeys.ROLE_SELECTION_REQUIRED);
-
-        SecurityContextHelper.applyPermissionAuthorities(authentication, permissions);
 
         int featureCount = permissions != null && permissions.getFeatures() != null
                 ? permissions.getFeatures().size()

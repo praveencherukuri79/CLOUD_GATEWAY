@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,6 +30,7 @@ public class CustomProxyController {
     @Value("${app.downstream.alerts}")
     String alertsServiceUri;
 
+    @PreAuthorize("@perm.check(authentication, 'notifications', 'view')")
     @RequestMapping({"/notifications", "/notifications/{*path}"})
     public ResponseEntity<byte[]> proxyNotifications(
             HttpServletRequest request,
@@ -41,6 +43,7 @@ public class CustomProxyController {
                 "notifications-custom-route");
     }
 
+    @PreAuthorize("@perm.check(authentication, 'alerts', 'view')")
     @RequestMapping({"/alerts", "/alerts/{*path}"})
     public ResponseEntity<byte[]> proxyAlerts(
             HttpServletRequest request,
