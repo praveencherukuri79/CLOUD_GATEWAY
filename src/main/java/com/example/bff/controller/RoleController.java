@@ -2,8 +2,6 @@ package com.example.bff.controller;
 
 import com.example.bff.model.RolePermissions;
 import com.example.bff.session.RoleSessionService;
-import com.example.bff.session.SessionKeys;
-import jakarta.servlet.http.HttpSession;
 import java.util.List;
 import java.util.Map;
 import lombok.AccessLevel;
@@ -27,22 +25,23 @@ public class RoleController {
     RoleSessionService roleSessionService;
 
     @GetMapping("/available")
-    public Map<String, Object> availableRoles(Authentication authentication, HttpSession session) {
+    public Map<String, Object> availableRoles(Authentication authentication) {
         List<String> roles = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .toList();
 
-        String activeRole = (String) session.getAttribute(SessionKeys.ACTIVE_ROLE);
+        String activeRole = roleSessionService.selectedRoleId(authentication);
+        boolean selectionRequired = roles.size() > 1 && (activeRole == null || activeRole.isBlank());
 
         return Map.of(
                 "roles", roles,
                 "activeRole", activeRole != null ? activeRole : "",
-                "selectionRequired", Boolean.TRUE.equals(session.getAttribute(SessionKeys.ROLE_SELECTION_REQUIRED)));
+                "selectionRequired", selectionRequired);
     }
 
     @PostMapping("/select")
     public Map<String, Object> selectRole(@RequestBody Map<String, String> body,
-                                          Authentication authentication, HttpSession session) {
+                                          Authentication authentication) {
         String selectedRole = body.get("role");
         if (selectedRole == null || selectedRole.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "role is required");
@@ -56,7 +55,7 @@ public class RoleController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User does not have role: " + selectedRole);
         }
 
-        RolePermissions permissions = roleSessionService.applyRole(authentication, session, selectedRole);
+        RolePermissions permissions = roleSessionService.applyRole(authentication, selectedRole);
 
         return Map.of(
                 "activeRole", selectedRole,
@@ -64,13 +63,13 @@ public class RoleController {
     }
 
     @GetMapping("/permissions")
-    public Map<String, Object> currentPermissions(HttpSession session) {
-        String activeRole = (String) session.getAttribute(SessionKeys.ACTIVE_ROLE);
-        if (activeRole == null) {
+    public Map<String, Object> currentPermissions(Authentication authentication) {
+        String activeRole = roleSessionService.selectedRoleId(authentication);
+        if (activeRole == null || activeRole.isBlank()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "No role selected");
         }
 
-        RolePermissions permissions = SessionKeys.getPermissions(session);
+        RolePermissions permissions = roleSessionService.getSelectedRolePermissions(authentication);
         return Map.of(
                 "activeRole", activeRole,
                 "features", permissions.getFeatures());

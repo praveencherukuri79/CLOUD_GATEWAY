@@ -2,9 +2,8 @@ package com.example.bff.security;
 
 import com.example.bff.model.RolePermissions;
 import com.example.bff.service.RolePermissionService;
-import com.example.bff.session.SessionKeys;
-import jakarta.servlet.http.HttpSession;
 import java.util.Map;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -16,24 +15,22 @@ public class PermissionService {
         this.rolePermissionService = rolePermissionService;
     }
 
-    public boolean hasAccess(HttpSession session, String feature, String action) {
-        if (session == null) {
-            return false;
-        }
+    public boolean hasAccess(Authentication authentication, String feature, String action) {
         if (feature == null || feature.isBlank() || action == null || action.isBlank()) {
             return false;
         }
 
-        RolePermissions permissions = SessionKeys.getPermissions(session);
-        String activeRole = (String) session.getAttribute(SessionKeys.ACTIVE_ROLE);
-
-        if ((permissions == null || permissions.getFeatures() == null)
-                && activeRole != null && !activeRole.isBlank()) {
-            RolePermissions fetched = rolePermissionService.fetchPermissions(activeRole);
-            session.setAttribute(SessionKeys.ROLE_PERMISSIONS, fetched);
-            permissions = fetched;
+        AuthContext auth = AuthUtils.authContext(authentication);
+        if (auth == null) {
+            return false;
         }
 
+        String roleId = auth.getSelectedRoleId();
+        if (roleId == null || roleId.isBlank()) {
+            return false;
+        }
+
+        RolePermissions permissions = rolePermissionService.fetchPermissions(roleId);
         if (permissions == null || permissions.getFeatures() == null) {
             return false;
         }

@@ -4,7 +4,6 @@ import com.example.bff.session.RoleSessionService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.List;
 import lombok.AccessLevel;
@@ -33,14 +32,15 @@ public class RoleAwareLoginSuccessHandler implements AuthenticationSuccessHandle
                 .map(GrantedAuthority::getAuthority)
                 .toList();
 
-        HttpSession session = request.getSession();
         log.info("User {} logged in with roles={}", authentication.getName(), roles);
 
+        roleSessionService.applyAuthContext(authentication, "");
+
         if (roles.size() == 1) {
-            roleSessionService.applyRole(authentication, session, roles.get(0));
-            defaultHandler.onAuthenticationSuccess(request, response, authentication);
+            roleSessionService.applyRole(authentication, roles.get(0));
+            Authentication updated = AuthUtils.currentAuthentication();
+            defaultHandler.onAuthenticationSuccess(request, response, updated != null ? updated : authentication);
         } else {
-            roleSessionService.markRoleSelectionRequired(session);
             response.sendRedirect("/role-selection");
         }
     }

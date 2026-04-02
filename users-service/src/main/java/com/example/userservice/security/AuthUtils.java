@@ -1,22 +1,12 @@
-package com.example.bff.security;
+package com.example.userservice.security;
 
+import java.util.Map;
 import org.springframework.lang.Nullable;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 public final class AuthUtils {
 
     private AuthUtils() {}
-
-    @Nullable
-    public static Authentication currentAuthentication() {
-        return SecurityContextHolder.getContext().getAuthentication();
-    }
-
-    @Nullable
-    public static AuthContext currentAuthContext() {
-        return authContext(currentAuthentication());
-    }
 
     @Nullable
     public static AuthContext authContext(@Nullable Authentication authentication) {
@@ -32,5 +22,13 @@ public final class AuthUtils {
     public static String selectedRoleId(@Nullable Authentication authentication) {
         AuthContext ctx = authContext(authentication);
         return ctx != null ? ctx.getSelectedRoleId() : null;
+    }
+
+    public static Map<String, Object> claims(@Nullable Authentication authentication) {
+        AuthContext ctx = authContext(authentication);
+        if (ctx == null || ctx.getClaims() == null) {
+            return Map.of();
+        }
+        return ctx.getClaims();
     }
 }

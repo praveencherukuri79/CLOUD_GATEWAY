@@ -1,7 +1,7 @@
 package com.example.bff.service;
 
 import com.example.bff.exception.ProxyRequestException;
-import com.example.bff.session.SessionKeys;
+import com.example.bff.security.AuthUtils;
 import com.example.bff.util.CustomProxyUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
@@ -14,7 +14,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
@@ -35,18 +34,21 @@ public class CustomProxyService {
     public ResponseEntity<byte[]> forward(
             HttpServletRequest request,
             byte[] body,
+                        Authentication authentication,
             String routePrefix,
             String targetBaseUri,
             String routeId) {
         String correlationId = CustomProxyUtils.resolveCorrelationId(request);
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+                if (authentication == null || !authentication.isAuthenticated()) {
+                        throw new ProxyRequestException(
+                                        HttpStatus.UNAUTHORIZED,
+                                        "No authenticated user found in SecurityContext",
+                                        correlationId);
+                }
 
         String targetUri = CustomProxyUtils.buildTargetUri(request, routePrefix, targetBaseUri);
         String appUser = authentication.getName();
-        jakarta.servlet.http.HttpSession session = request.getSession(false);
-        String activeRole = session != null
-                ? (String) session.getAttribute(SessionKeys.ACTIVE_ROLE)
-                : null;
+        String activeRole = AuthUtils.selectedRoleId(authentication);
         String token = internalJwtService.createToken(authentication, resolveClientIp(request), activeRole);
         HttpMethod method = HttpMethod.valueOf(request.getMethod());
         HttpHeaders outboundHeaders =

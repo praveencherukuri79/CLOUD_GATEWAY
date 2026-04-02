@@ -1,6 +1,7 @@
 package com.example.userservice.config;
 
 import com.example.userservice.util.JwtSecurityUtils;
+import com.example.userservice.security.AuthContextJwtAuthenticationConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -43,7 +44,8 @@ public class SecurityConfig {
                         auth.requestMatchers("/public/ping").permitAll()
                                 .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 ->
-                    oauth2.jwt(jwt -> jwt.decoder(jwtDecoder)))
+                    oauth2.jwt(jwt -> jwt.decoder(jwtDecoder)
+                        .jwtAuthenticationConverter(new AuthContextJwtAuthenticationConverter())))
                 .build();
     }
 

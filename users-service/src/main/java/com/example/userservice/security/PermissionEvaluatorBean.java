@@ -2,7 +2,6 @@ package com.example.userservice.security;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 
 @Component("perm")
@@ -15,11 +14,12 @@ public class PermissionEvaluatorBean {
     }
 
     public boolean check(Authentication authentication, String feature, String action) {
-        if (authentication == null || !(authentication.getPrincipal() instanceof Jwt jwt)) {
+        AuthContext auth = AuthUtils.authContext(authentication);
+        if (auth == null) {
             return false;
         }
 
-        String roleId = jwt.getClaimAsString("activeRole");
+        String roleId = auth.getSelectedRoleId();
         if (roleId == null || roleId.isBlank()) {
             throw new InsufficientAuthenticationException("Missing activeRole claim");
         }

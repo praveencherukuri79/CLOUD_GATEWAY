@@ -1,6 +1,5 @@
 package com.example.bff.security;
 
-import jakarta.servlet.http.HttpSession;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -18,7 +17,6 @@ public class PermissionEvaluatorBean {
             return false;
         }
 
-        HttpSession session = AuthUtils.currentSession();
-        return permissionService.hasAccess(session, feature, action);
+        return permissionService.hasAccess(authentication, feature, action);
     }
 }

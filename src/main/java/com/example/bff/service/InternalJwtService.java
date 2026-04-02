@@ -1,6 +1,8 @@
 package com.example.bff.service;
 
 import com.example.bff.config.JwksKeyProvider;
+import com.example.bff.security.AuthContext;
+import com.example.bff.security.AuthUtils;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -16,10 +18,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.AuthenticatedPrincipal;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -50,7 +50,7 @@ public class InternalJwtService {
 
     public String createToken(Authentication authentication, String ipAddress, String activeRole) {
         Instant now = Instant.now();
-        Object principal = authentication.getPrincipal();
+        AuthContext authContext = AuthUtils.authContext(authentication);
 
         JWTClaimsSet.Builder claims = new JWTClaimsSet.Builder()
                 .issuer(issuer)
@@ -68,17 +68,23 @@ public class InternalJwtService {
             claims.claim("activeRole", activeRole);
         }
 
-        if (principal instanceof OidcUser oidc) {
-            String username = StringUtils.hasText(oidc.getClaimAsString("preferred_username"))
-                    ? oidc.getClaimAsString("preferred_username")
-                    : oidc.getName();
-            claims.claim("username", username);
-
-            if (StringUtils.hasText(oidc.getEmail())) {
-                claims.claim("email", oidc.getEmail());
+        if (authContext != null) {
+            if (StringUtils.hasText(authContext.getUsername())) {
+                claims.claim("username", authContext.getUsername());
             }
-        } else if (principal instanceof AuthenticatedPrincipal named) {
-            claims.claim("username", named.getName());
+            if (StringUtils.hasText(authContext.getTenantId())) {
+                claims.claim("tenantId", authContext.getTenantId());
+            }
+            if (StringUtils.hasText(authContext.getSelectedRoleType())) {
+                claims.claim("activeRoleType", authContext.getSelectedRoleType());
+            }
+            if (authContext.getEmail() != null && StringUtils.hasText(authContext.getEmail())) {
+                claims.claim("email", authContext.getEmail());
+            }
+        }
+
+        if (authContext == null || !StringUtils.hasText(authContext.getUsername())) {
+            claims.claim("username", authentication.getName());
         }
 
         if (StringUtils.hasText(ipAddress)) {

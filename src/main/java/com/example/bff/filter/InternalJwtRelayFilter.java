@@ -1,9 +1,8 @@
 package com.example.bff.filter;
 
 import com.example.bff.exception.ProxyRequestException;
+import com.example.bff.security.AuthUtils;
 import com.example.bff.service.InternalJwtService;
-import com.example.bff.session.SessionKeys;
-import jakarta.servlet.http.HttpSession;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
@@ -15,7 +14,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.function.ServerRequest;
 
@@ -35,7 +33,7 @@ public class InternalJwtRelayFilter {
         return request -> {
             String correlationId = resolveCorrelationId(request);
 
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            Authentication authentication = AuthUtils.currentAuthentication();
 
             if (authentication == null
                     || !authentication.isAuthenticated()
@@ -50,10 +48,7 @@ public class InternalJwtRelayFilter {
                         correlationId);
             }
 
-            HttpSession session = request.servletRequest().getSession(false);
-            String activeRole = session != null
-                    ? (String) session.getAttribute(SessionKeys.ACTIVE_ROLE)
-                    : null;
+            String activeRole = AuthUtils.selectedRoleId(authentication);
 
             String token = internalJwtService.createToken(authentication, resolveClientIp(request), activeRole);
 
