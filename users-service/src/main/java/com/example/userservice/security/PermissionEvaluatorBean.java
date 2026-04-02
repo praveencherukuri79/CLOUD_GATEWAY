@@ -1,6 +1,7 @@
 package com.example.userservice.security;
 
 import org.springframework.security.core.Authentication;
+import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 
@@ -19,6 +20,14 @@ public class PermissionEvaluatorBean {
         }
 
         String roleId = jwt.getClaimAsString("activeRole");
-        return permissionService.hasAccess(roleId, feature, action);
+        if (roleId == null || roleId.isBlank()) {
+            throw new InsufficientAuthenticationException("Missing activeRole claim");
+        }
+
+        try {
+            return permissionService.hasAccess(roleId, feature, action);
+        } catch (RuntimeException ex) {
+            throw new InsufficientAuthenticationException("Unable to evaluate permissions", ex);
+        }
     }
 }

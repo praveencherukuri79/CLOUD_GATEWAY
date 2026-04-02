@@ -3,8 +3,6 @@ package com.example.bff.security;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 @Component("perm")
 public class PermissionEvaluatorBean {
@@ -20,12 +18,7 @@ public class PermissionEvaluatorBean {
             return false;
         }
 
-        ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        if (attrs == null) {
-            return false;
-        }
-
-        HttpSession session = attrs.getRequest().getSession(false);
+        HttpSession session = AuthUtils.currentSession();
         return permissionService.hasAccess(session, feature, action);
     }
 }
