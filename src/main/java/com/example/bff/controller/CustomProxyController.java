@@ -31,7 +31,7 @@ public class CustomProxyController {
     @Value("${app.downstream.alerts}")
     String alertsServiceUri;
 
-    @PreAuthorize("@perm.check(authentication, 'notifications', 'view')")
+    @PreAuthorize("@perm.check(authentication, 'notifications_view')")
     @RequestMapping({"/notifications", "/notifications/{*path}"})
     public ResponseEntity<byte[]> proxyNotifications(
             HttpServletRequest request,
@@ -46,7 +46,7 @@ public class CustomProxyController {
                 "notifications-custom-route");
     }
 
-    @PreAuthorize("@perm.check(authentication, 'alerts', 'view')")
+    @PreAuthorize("@perm.check(authentication, 'alerts_view')")
     @RequestMapping({"/alerts", "/alerts/{*path}"})
     public ResponseEntity<byte[]> proxyAlerts(
             HttpServletRequest request,

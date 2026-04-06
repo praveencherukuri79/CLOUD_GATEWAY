@@ -2,7 +2,7 @@ package com.example.userservice.security;
 
 import com.example.userservice.model.RolePermissions;
 import com.example.userservice.service.ConfigServiceClient;
-import java.util.Map;
+import java.util.List;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -14,24 +14,53 @@ public class PermissionService {
         this.configServiceClient = configServiceClient;
     }
 
-    public boolean hasAccess(String roleId, String feature, String action) {
+    public boolean hasAllPermissions(String roleId, List<String> permissionKeys) {
         if (roleId == null || roleId.isBlank()) {
             return false;
         }
-        if (feature == null || feature.isBlank() || action == null || action.isBlank()) {
+        if (permissionKeys == null || permissionKeys.isEmpty()) {
             return false;
         }
 
         RolePermissions permissions = configServiceClient.getPermissions(roleId);
-        if (permissions == null || permissions.features() == null) {
+        if (permissions == null || permissions.permissions() == null) {
             return false;
         }
 
-        Map<String, Boolean> featurePerms = permissions.features().get(feature);
-        if (featurePerms == null) {
+        for (String key : permissionKeys) {
+            if (key == null || key.isBlank()) {
+                return false;
+            }
+            if (!Boolean.TRUE.equals(permissions.permissions().get(key))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public boolean hasAnyPermissions(String roleId, List<String> permissionKeys) {
+        if (roleId == null || roleId.isBlank()) {
+            return false;
+        }
+        if (permissionKeys == null || permissionKeys.isEmpty()) {
             return false;
         }
 
-        return Boolean.TRUE.equals(featurePerms.get(action));
+        RolePermissions permissions = configServiceClient.getPermissions(roleId);
+        if (permissions == null || permissions.permissions() == null) {
+            return false;
+        }
+
+        for (String key : permissionKeys) {
+            if (key == null || key.isBlank()) {
+                continue;
+            }
+            if (Boolean.TRUE.equals(permissions.permissions().get(key))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

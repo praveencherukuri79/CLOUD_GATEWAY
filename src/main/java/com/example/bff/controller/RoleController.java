@@ -59,7 +59,7 @@ public class RoleController {
 
         return Map.of(
                 "activeRole", selectedRole,
-                "features", permissions.getFeatures());
+            "permissions", permissions.getPermissions());
     }
 
     @GetMapping("/permissions")
@@ -72,6 +72,6 @@ public class RoleController {
         RolePermissions permissions = roleSessionService.getSelectedRolePermissions(authentication);
         return Map.of(
                 "activeRole", activeRole,
-                "features", permissions.getFeatures());
+            "permissions", permissions.getPermissions());
     }
 }

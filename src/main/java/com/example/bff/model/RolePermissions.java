@@ -13,5 +13,5 @@ import lombok.experimental.FieldDefaults;
 public class RolePermissions implements Serializable {
 
     String role;
-    Map<String, Map<String, Boolean>> features;
+    Map<String, Boolean> permissions;
 }

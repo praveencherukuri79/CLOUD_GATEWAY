@@ -69,10 +69,10 @@ public class RoleSessionService {
 
         applyAuthContext(authentication, role);
 
-        int featureCount = permissions != null && permissions.getFeatures() != null
-                ? permissions.getFeatures().size()
+        int permissionCount = permissions != null && permissions.getPermissions() != null
+            ? permissions.getPermissions().size()
                 : 0;
-        log.info("Applied role={} with {} features", role, featureCount);
+        log.info("Applied role={} with {} permissions", role, permissionCount);
 
         return permissions;
     }

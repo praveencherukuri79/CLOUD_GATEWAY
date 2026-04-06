@@ -20,7 +20,7 @@ public class UsersController {
         return Map.of("message", "users service is running");
     }
 
-    @PreAuthorize("@perm.check(authentication, 'users', 'view')")
+    @PreAuthorize("@perm.check(authentication, 'users_view')")
     @GetMapping("/users/{userId}")
     public Map<String, Object> getUser(
             @PathVariable String userId,

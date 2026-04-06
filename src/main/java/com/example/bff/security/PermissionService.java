@@ -2,7 +2,7 @@ package com.example.bff.security;
 
 import com.example.bff.model.RolePermissions;
 import com.example.bff.service.RolePermissionService;
-import java.util.Map;
+import java.util.List;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
@@ -15,8 +15,8 @@ public class PermissionService {
         this.rolePermissionService = rolePermissionService;
     }
 
-    public boolean hasAccess(Authentication authentication, String feature, String action) {
-        if (feature == null || feature.isBlank() || action == null || action.isBlank()) {
+    public boolean hasAllPermissions(Authentication authentication, List<String> permissionKeys) {
+        if (permissionKeys == null || permissionKeys.isEmpty()) {
             return false;
         }
 
@@ -31,15 +31,51 @@ public class PermissionService {
         }
 
         RolePermissions permissions = rolePermissionService.fetchPermissions(roleId);
-        if (permissions == null || permissions.getFeatures() == null) {
+        if (permissions == null || permissions.getPermissions() == null) {
             return false;
         }
 
-        Map<String, Boolean> featurePerms = permissions.getFeatures().get(feature);
-        if (featurePerms == null) {
+        for (String key : permissionKeys) {
+            if (key == null || key.isBlank()) {
+                return false;
+            }
+            if (!Boolean.TRUE.equals(permissions.getPermissions().get(key))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public boolean hasAnyPermissions(Authentication authentication, List<String> permissionKeys) {
+        if (permissionKeys == null || permissionKeys.isEmpty()) {
             return false;
         }
 
-        return Boolean.TRUE.equals(featurePerms.get(action));
+        AuthContext auth = AuthUtils.authContext(authentication);
+        if (auth == null) {
+            return false;
+        }
+
+        String roleId = auth.getSelectedRoleId();
+        if (roleId == null || roleId.isBlank()) {
+            return false;
+        }
+
+        RolePermissions permissions = rolePermissionService.fetchPermissions(roleId);
+        if (permissions == null || permissions.getPermissions() == null) {
+            return false;
+        }
+
+        for (String key : permissionKeys) {
+            if (key == null || key.isBlank()) {
+                continue;
+            }
+            if (Boolean.TRUE.equals(permissions.getPermissions().get(key))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
