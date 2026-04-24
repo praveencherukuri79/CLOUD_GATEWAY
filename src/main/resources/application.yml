@@ -1,6 +1,22 @@
 server:
     port: 8080
 
+spring:
+    cloud:
+        circuitbreaker:
+            resilience4j:
+                configs:
+                    default:
+                        slidingWindowSize: 10
+                        minimumNumberOfCalls: 5
+                        failureRateThreshold: 50
+                        waitDurationInOpenState: 10s
+                instances:
+                    users-service:
+                        baseConfig: default
+                    orders-service:
+                        baseConfig: default
+
 app:
     internal-jwt:
         issuer: bff-service

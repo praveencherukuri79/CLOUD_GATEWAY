@@ -64,11 +64,17 @@ class UsersServiceApplicationTests {
         ConfigServiceClient testConfigServiceClient() {
             ConfigServiceClient mock = Mockito.mock(ConfigServiceClient.class);
             Mockito.when(mock.getPermissions("ROLE_USER")).thenReturn(new RolePermissions("ROLE_USER",
-                    Map.of("users", Map.of("view", true, "edit", false),
-                            "orders", Map.of("view", true, "create", true))));
+                Map.of(
+                    "users_view", true,
+                    "users_edit", false,
+                    "orders_view", true,
+                    "orders_create", true)));
             Mockito.when(mock.getPermissions("ROLE_VIEWER")).thenReturn(new RolePermissions("ROLE_VIEWER",
-                    Map.of("users", Map.of("view", true, "edit", false),
-                            "orders", Map.of("view", true, "create", false))));
+                Map.of(
+                    "users_view", true,
+                    "users_edit", false,
+                    "orders_view", true,
+                    "orders_create", false)));
             return mock;
         }
     }

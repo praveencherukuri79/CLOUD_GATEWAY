@@ -34,17 +34,17 @@ public class CustomProxyService {
     public ResponseEntity<byte[]> forward(
             HttpServletRequest request,
             byte[] body,
-                        Authentication authentication,
+            Authentication authentication,
             String routePrefix,
             String targetBaseUri,
             String routeId) {
         String correlationId = CustomProxyUtils.resolveCorrelationId(request);
-                if (authentication == null || !authentication.isAuthenticated()) {
-                        throw new ProxyRequestException(
-                                        HttpStatus.UNAUTHORIZED,
-                                        "No authenticated user found in SecurityContext",
-                                        correlationId);
-                }
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new ProxyRequestException(
+                    HttpStatus.UNAUTHORIZED,
+                    "No authenticated user found in SecurityContext",
+                    correlationId);
+        }
 
         String targetUri = CustomProxyUtils.buildTargetUri(request, routePrefix, targetBaseUri);
         String appUser = authentication.getName();

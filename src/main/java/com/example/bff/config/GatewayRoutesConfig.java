@@ -2,6 +2,7 @@ package com.example.bff.config;
 
 import static org.springframework.cloud.gateway.server.mvc.filter.BeforeFilterFunctions.stripPrefix;
 import static org.springframework.cloud.gateway.server.mvc.filter.BeforeFilterFunctions.uri;
+import static org.springframework.cloud.gateway.server.mvc.filter.CircuitBreakerFilterFunctions.circuitBreaker;
 import static org.springframework.cloud.gateway.server.mvc.handler.GatewayRouterFunctions.route;
 import static org.springframework.cloud.gateway.server.mvc.handler.HandlerFunctions.http;
 
@@ -38,6 +39,7 @@ public class GatewayRoutesConfig {
                         .before(internalJwtRelayFilter.asBeforeFunction())
                         .before(stripPrefix(1))
                         .before(uri(usersServiceUri))
+                        .filter(circuitBreaker("users-service"))
                         .after(proxyResponseHeadersFilter.asAfterFunction("users-service-route"))
                         .build();
 
@@ -47,6 +49,7 @@ public class GatewayRoutesConfig {
                         .before(internalJwtRelayFilter.asBeforeFunction())
                         .before(stripPrefix(1))
                         .before(uri(ordersServiceUri))
+                        .filter(circuitBreaker("orders-service"))
                         .after(proxyResponseHeadersFilter.asAfterFunction("orders-service-route"))
                         .build();
 

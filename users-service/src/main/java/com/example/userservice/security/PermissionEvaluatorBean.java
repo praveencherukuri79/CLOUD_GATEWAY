@@ -1,6 +1,7 @@
 package com.example.userservice.security;
 
 import java.util.List;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.stereotype.Component;
@@ -29,7 +30,7 @@ public class PermissionEvaluatorBean {
 
         String roleId = auth.getSelectedRoleId();
         if (roleId == null || roleId.isBlank()) {
-            throw new InsufficientAuthenticationException("Missing activeRole claim");
+            throw new AccessDeniedException("Missing activeRole claim");
         }
 
         try {
@@ -47,7 +48,7 @@ public class PermissionEvaluatorBean {
 
         String roleId = auth.getSelectedRoleId();
         if (roleId == null || roleId.isBlank()) {
-            throw new InsufficientAuthenticationException("Missing activeRole claim");
+            throw new AccessDeniedException("Missing activeRole claim");
         }
 
         try {

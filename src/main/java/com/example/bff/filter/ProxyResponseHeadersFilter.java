@@ -26,8 +26,22 @@ public class ProxyResponseHeadersFilter {
 
             response.headers().set(InternalJwtRelayFilter.CORRELATION_ID_HEADER, correlationId);
             response.headers().set(InternalJwtRelayFilter.APP_USER_HEADER, appUser);
+            copyRequestHeaderIfPresent(
+                    request, response, InternalJwtRelayFilter.JWT_ISSUER_HEADER);
+            copyRequestHeaderIfPresent(
+                    request, response, InternalJwtRelayFilter.ACTIVE_ROLE_ID_HEADER);
+            copyRequestHeaderIfPresent(
+                    request, response, InternalJwtRelayFilter.TENANT_ID_HEADER);
             response.headers().set("X-Gateway-Route", routeId);
             return response;
         };
+    }
+
+    private static void copyRequestHeaderIfPresent(
+            ServerRequest request, ServerResponse response, String name) {
+        String value = request.headers().firstHeader(name);
+        if (value != null && !value.isBlank()) {
+            response.headers().set(name, value);
+        }
     }
 }

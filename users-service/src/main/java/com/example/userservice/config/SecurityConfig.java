@@ -2,6 +2,7 @@ package com.example.userservice.config;
 
 import com.example.userservice.util.JwtSecurityUtils;
 import com.example.userservice.security.AuthContextJwtAuthenticationConverter;
+import com.example.userservice.security.PermissionsWarmupFilter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,6 +11,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 
 
@@ -34,7 +36,8 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            JwtDecoder jwtDecoder)
+            JwtDecoder jwtDecoder,
+            PermissionsWarmupFilter permissionsWarmupFilter)
             throws Exception {
 
         return http.csrf(csrf -> csrf.disable())
@@ -46,6 +49,7 @@ public class SecurityConfig {
                 .oauth2ResourceServer(oauth2 ->
                     oauth2.jwt(jwt -> jwt.decoder(jwtDecoder)
                         .jwtAuthenticationConverter(new AuthContextJwtAuthenticationConverter())))
+                .addFilterAfter(permissionsWarmupFilter, BearerTokenAuthenticationFilter.class)
                 .build();
     }
 

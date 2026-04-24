@@ -1,6 +1,7 @@
 package com.example.bff.filter;
 
 import com.example.bff.exception.ProxyRequestException;
+import com.example.bff.security.AuthContext;
 import com.example.bff.security.AuthUtils;
 import com.example.bff.service.InternalJwtService;
 import java.util.Optional;
@@ -9,12 +10,15 @@ import java.util.function.Function;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.function.ServerRequest;
 
 @Component
@@ -25,9 +29,17 @@ public class InternalJwtRelayFilter {
 
     public static final String APP_USER_HEADER = "X-APP-User";
     public static final String CORRELATION_ID_HEADER = "X-Correlation-Id";
+    public static final String JWT_ISSUER_HEADER = "X-Internal-JWT-Issuer";
+    public static final String ACTIVE_ROLE_ID_HEADER = "X-Active-Role-Id";
+    public static final String TENANT_ID_HEADER = "X-Tenant-Id";
+
     private static final String X_FORWARDED_FOR_HEADER = "X-Forwarded-For";
 
     InternalJwtService internalJwtService;
+
+    @NonFinal
+    @Value("${app.internal-jwt.issuer}")
+    String internalJwtIssuer;
 
     public Function<ServerRequest, ServerRequest> asBeforeFunction() {
         return request -> {
@@ -49,6 +61,7 @@ public class InternalJwtRelayFilter {
             }
 
             String activeRole = AuthUtils.selectedRoleId(authentication);
+            AuthContext authContext = AuthUtils.authContext(authentication);
 
             String token = internalJwtService.createToken(authentication, resolveClientIp(request), activeRole);
 
@@ -59,6 +72,19 @@ public class InternalJwtRelayFilter {
                                 headers.setBearerAuth(token);
                                 headers.set(APP_USER_HEADER, authentication.getName());
                                 headers.set(CORRELATION_ID_HEADER, correlationId);
+                                if (StringUtils.hasText(internalJwtIssuer)) {
+                                    headers.set(JWT_ISSUER_HEADER, internalJwtIssuer);
+                                }
+                                if (StringUtils.hasText(activeRole)) {
+                                    headers.set(ACTIVE_ROLE_ID_HEADER, activeRole);
+                                } else {
+                                    headers.remove(ACTIVE_ROLE_ID_HEADER);
+                                }
+                                if (authContext != null && StringUtils.hasText(authContext.getTenantId())) {
+                                    headers.set(TENANT_ID_HEADER, authContext.getTenantId());
+                                } else {
+                                    headers.remove(TENANT_ID_HEADER);
+                                }
                             })
                     .build();
         };
