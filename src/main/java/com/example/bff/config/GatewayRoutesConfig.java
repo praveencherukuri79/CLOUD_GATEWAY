@@ -6,6 +6,7 @@ import static org.springframework.cloud.gateway.server.mvc.filter.CircuitBreaker
 import static org.springframework.cloud.gateway.server.mvc.handler.GatewayRouterFunctions.route;
 import static org.springframework.cloud.gateway.server.mvc.handler.HandlerFunctions.http;
 
+import com.example.bff.filter.GatewayMvcRateLimit;
 import com.example.bff.filter.InternalJwtRelayFilter;
 import com.example.bff.filter.ProxyResponseHeadersFilter;
 import lombok.AccessLevel;
@@ -24,6 +25,7 @@ public class GatewayRoutesConfig {
 
     final InternalJwtRelayFilter internalJwtRelayFilter;
     final ProxyResponseHeadersFilter proxyResponseHeadersFilter;
+    final GatewayMvcRateLimit gatewayMvcRateLimit;
 
     @Value("${app.downstream.users}")
     String usersServiceUri;
@@ -39,6 +41,7 @@ public class GatewayRoutesConfig {
                         .before(internalJwtRelayFilter.asBeforeFunction())
                         .before(stripPrefix(1))
                         .before(uri(usersServiceUri))
+                        .filter(gatewayMvcRateLimit.asFilter())
                         .filter(circuitBreaker("users-service"))
                         .after(proxyResponseHeadersFilter.asAfterFunction("users-service-route"))
                         .build();
@@ -49,6 +52,7 @@ public class GatewayRoutesConfig {
                         .before(internalJwtRelayFilter.asBeforeFunction())
                         .before(stripPrefix(1))
                         .before(uri(ordersServiceUri))
+                        .filter(gatewayMvcRateLimit.asFilter())
                         .filter(circuitBreaker("orders-service"))
                         .after(proxyResponseHeadersFilter.asAfterFunction("orders-service-route"))
                         .build();

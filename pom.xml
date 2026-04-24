@@ -20,6 +20,7 @@
     <spring-cloud.version>2025.0.1</spring-cloud.version>
     <spring-cloud-circuitbreaker-resilience4j.version>3.3.2</spring-cloud-circuitbreaker-resilience4j.version>
     <resilience4j.version>2.2.0</resilience4j.version>
+    <bucket4j.version>8.14.0</bucket4j.version>
   </properties>
 
   <dependencyManagement>
@@ -43,6 +44,12 @@
     <dependency>
       <groupId>org.springframework.cloud</groupId>
       <artifactId>spring-cloud-starter-gateway-server-webmvc</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.bucket4j</groupId>
+      <artifactId>bucket4j_jdk17-core</artifactId>
+      <version>${bucket4j.version}</version>
     </dependency>
 
     <!-- Same classpath as spring-cloud-starter-circuitbreaker-resilience4j for org repos that omit that starter.

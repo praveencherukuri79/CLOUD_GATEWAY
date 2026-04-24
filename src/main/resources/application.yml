@@ -30,6 +30,8 @@ app:
         orders: http://localhost:8082
         notifications: http://localhost:8083
         alerts: http://localhost:8084
+    proxy:
+        rpm: 200
 
 logging:
     level:
