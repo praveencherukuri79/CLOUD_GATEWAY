@@ -1,21 +1,29 @@
 server:
     port: 8080
 
-spring:
-    cloud:
-        circuitbreaker:
-            resilience4j:
-                configs:
-                    default:
-                        slidingWindowSize: 10
-                        minimumNumberOfCalls: 5
-                        failureRateThreshold: 50
-                        waitDurationInOpenState: 10s
-                instances:
-                    users-service:
-                        baseConfig: default
-                    orders-service:
-                        baseConfig: default
+# Single Resilience4j config (registries used by spring-cloud-circuitbreaker-resilience4j + Gateway).
+resilience4j:
+    circuitbreaker:
+        configs:
+            default:
+                slidingWindowSize: 10
+                minimumNumberOfCalls: 5
+                failureRateThreshold: 50
+                waitDurationInOpenState: 10s
+        instances:
+            users-service:
+                baseConfig: default
+            orders-service:
+                baseConfig: default
+    timelimiter:
+        configs:
+            default:
+                timeoutDuration: 60s
+        instances:
+            users-service:
+                baseConfig: default
+            orders-service:
+                baseConfig: default
 
 app:
     internal-jwt:
