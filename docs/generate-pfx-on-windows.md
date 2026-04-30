@@ -374,3 +374,29 @@ Then make sure the application uses that same password value when loading the ke
 - `BFF_JWT_PFX_BASE64`
 - `APP_INTERNAL_JWT_KEYSTORE_PASSWORD`
 - `APP_INTERNAL_JWT_KEY_ALIAS` if you want the alias configurable
+
+## Verify the PFX password
+
+Use one of these commands to confirm the `.pfx` password is correct.
+
+### Verify with `keytool`
+
+```powershell
+keytool -list -v -keystore src/main/resources/keys/bff-jwt-keystore.pfx -storetype PKCS12 -storepass changeit
+```
+
+If the password is correct, `keytool` lists the keystore contents.
+
+If the password is wrong, it fails with a password error.
+
+### Verify with OpenSSL
+
+```bash
+openssl pkcs12 -info -in src/main/resources/keys/bff-jwt-keystore.pfx -passin pass:changeit -noout
+```
+
+If the password is correct, OpenSSL prints PKCS#12 information.
+
+If the password is wrong, it fails with a MAC/password error.
+
+Replace `changeit` with the real password used when the `.pfx` file was created.
