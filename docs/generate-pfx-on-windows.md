@@ -20,6 +20,12 @@ To verify it is available, open PowerShell and run:
 keytool -help
 ```
 
+If you use OpenSSL from Git Bash on Windows, put `MSYS2_ARG_CONV_EXCL='*'` directly before the `openssl req` command that uses `-subj '/CN=...'`:
+
+```bash
+MSYS2_ARG_CONV_EXCL='*' openssl req -new -x509 -key private.key -out certificate.crt -days 3650 -subj '/CN=Internal JWT'
+```
+
 ## Values used by this project
 
 Example values used in this repository:
@@ -93,7 +99,7 @@ If you already have a certificate and private key, you can create a `.pfx` with 
 
 Example:
 
-```powershell
+```bash
 openssl pkcs12 -export -out bff-jwt-keystore.pfx -inkey private.key -in certificate.crt -name bff-internal-jwt
 ```
 
@@ -126,7 +132,7 @@ If you do not already have a private key and certificate, you can create both wi
 
 ### Step 1: Generate an RSA private key
 
-```powershell
+```bash
 openssl genrsa -out private.key 2048
 ```
 
@@ -134,13 +140,19 @@ openssl genrsa -out private.key 2048
 
 Use a minimal subject.
 
-```powershell
-openssl req -new -x509 -key private.key -out certificate.crt -days 3650 -subj "/CN=Internal JWT"
+```bash
+MSYS2_ARG_CONV_EXCL='*' openssl req -new -x509 -key private.key -out certificate.crt -days 3650 -subj '/CN=Internal JWT'
 ```
+
+Why this is needed in Git Bash:
+
+- Git Bash can treat `/CN=...` as a file path
+- `MSYS2_ARG_CONV_EXCL='*'` disables MSYS argument conversion for that command
+- in PowerShell, this extra prefix is not needed
 
 ### Step 3: Export to PFX
 
-```powershell
+```bash
 openssl pkcs12 -export -out src/main/resources/keys/bff-jwt-keystore.pfx -inkey private.key -in certificate.crt -name bff-internal-jwt
 ```
 
