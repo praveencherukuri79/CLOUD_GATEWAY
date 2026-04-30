@@ -94,11 +94,7 @@ If you already have a certificate and private key, you can create a `.pfx` with 
 Example:
 
 ```powershell
-openssl pkcs12 -export ^
-  -out bff-jwt-keystore.pfx ^
-  -inkey private.key ^
-  -in certificate.crt ^
-  -name bff-internal-jwt
+openssl pkcs12 -export -out bff-jwt-keystore.pfx -inkey private.key -in certificate.crt -name bff-internal-jwt
 ```
 
 OpenSSL will prompt for an export password.
@@ -136,22 +132,16 @@ openssl genrsa -out private.key 2048
 
 ### Step 2: Generate a self-signed certificate
 
+Use a minimal subject.
+
 ```powershell
-openssl req -new -x509 ^
-  -key private.key ^
-  -out certificate.crt ^
-  -days 3650 ^
-  -subj "/CN=BFF Internal JWT/OU=Dev/O=Example/L=Local/ST=Local/C=US"
+openssl req -new -x509 -key private.key -out certificate.crt -days 3650 -subj "/CN=Internal JWT"
 ```
 
 ### Step 3: Export to PFX
 
 ```powershell
-openssl pkcs12 -export ^
-  -out src/main/resources/keys/bff-jwt-keystore.pfx ^
-  -inkey private.key ^
-  -in certificate.crt ^
-  -name bff-internal-jwt
+openssl pkcs12 -export -out src/main/resources/keys/bff-jwt-keystore.pfx -inkey private.key -in certificate.crt -name bff-internal-jwt
 ```
 
 OpenSSL will ask for the export password.
