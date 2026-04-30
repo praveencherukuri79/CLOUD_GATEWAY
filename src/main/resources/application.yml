@@ -30,7 +30,9 @@ app:
         issuer: bff-service
         audience: internal-api
         ttl-seconds: 300
-        private-key-location: classpath:keys/bff-jwt-private.pem
+        keystore-location: classpath:keys/bff-jwt-keystore.pfx
+        keystore-password: ${APP_INTERNAL_JWT_KEYSTORE_PASSWORD:changeit}
+        key-alias: ${APP_INTERNAL_JWT_KEY_ALIAS:bff-internal-jwt}
     config-service:
         base-url: http://localhost:8085
     downstream:
